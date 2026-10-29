@@ -5,6 +5,13 @@
     const box=document.createElement('div');box.id='account-tools';
     box.style.cssText='margin:12px auto;padding:12px;max-width:680px;background:#fff;border-radius:14px;font-family:Nunito,system-ui';
     if(user.role==='admin'){
+      const adminEntry=document.createElement('button');adminEntry.type='button';adminEntry.id='btn-admin';
+      adminEntry.className='btn-primary';adminEntry.textContent='Verwaltung';
+      adminEntry.style.cssText='margin-top:10px;background:var(--ink)';
+      adminEntry.addEventListener('click',()=>{
+        if(window.marcelaAuth.user()?.role==='admin')window.showView('home');
+      });
+      document.getElementById('btn-learn').after(adminEntry);
       const backup=document.createElement('button');backup.type='button';backup.textContent='Lerninhalte sichern';
       backup.addEventListener('click',async()=>{
         backup.disabled=true;

@@ -2167,8 +2167,14 @@ let _trResult = '';
 function showTranslator() {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('translator-view').classList.add('active');
+  document.getElementById('translator-view').querySelector('.btn-back').onclick = function(){ showView('mode-select'); };
   window.scrollTo(0, 0);
   updateTrLabels();
+}
+
+function showTranslatorFromSplash() {
+  showTranslator();
+  document.getElementById('translator-view').querySelector('.btn-back').onclick = function(){ showView('splash'); };
 }
 
 function updateTrLabels() {

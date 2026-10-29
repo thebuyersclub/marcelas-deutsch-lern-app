@@ -23,11 +23,12 @@
     const result=await response.json();
     if(!response.ok){
       const conflict=response.status===409||result.error?.status==='FAILED_PRECONDITION';
-      throw new Error(conflict?'Die Inhalte wurden inzwischen auf einem anderen Gerät geändert. Deine Änderungen bleiben lokal erhalten.':'Cloud-Zugriff fehlgeschlagen. Bitte Verbindung und Kontorechte prüfen.');
+      const error=new Error(conflict?'Die Inhalte wurden inzwischen auf einem anderen Gerät geändert. Deine Änderungen bleiben lokal erhalten.':'Cloud-Zugriff fehlgeschlagen. Bitte Verbindung und Kontorechte prüfen.');
+      if(conflict)error.code='CONFLICT';throw error;
     }
     return result;
   }
-  function progressOf(data){return {stats:data.stats||{},streak:data.streak||0,weak:data.weak||{},examRecords:data.examRecords||{}};}
+  function progressOf(data){return {stats:data.stats||{},streak:data.streak||0,weak:data.weak||{},examRecords:data.examRecords||{},legacyImported:data.legacyImported===true};}
   function baseChapters(data){return (data.chapters||[]).filter(ch=>!ch._dictionaryAdditions);}
   async function getBase() {
     const doc=await request('/app/data',{},true);
@@ -57,19 +58,32 @@
     baseVersion=remote.doc?.updateTime||null;baseSignature=JSON.stringify(remote.chapters);
     let personal=progress?JSON.parse(progress.fields?.data?.stringValue||'{}'):{};
     progressSignature=JSON.stringify(progressOf(personal));
+    let importLegacy=false;
+    if(user().role==='learner'&&!personal.legacyImported){
+      const archive=await request('/app/stats',{},true);
+      if(archive){
+        const historical=JSON.parse(archive.fields?.stats?.stringValue||'{}');
+        personal.stats={...(personal.stats||{})};
+        for(const [date,seconds] of Object.entries(historical)){
+          if(/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(seconds)&&seconds>=0)
+            personal.stats[date]=Math.max(personal.stats[date]||0,seconds);
+        }
+        personal.legacyImported=true;importLegacy=true;
+      }
+    }
     let chapters=remote.chapters;
     const pending=JSON.parse(localStorage.getItem(pendingKey())||'null');
     if(pending){
       // Lokale Änderungen behalten. Ein Konflikt wird niemals automatisch überschrieben.
       personal=pending.progress;
       if(user().role==='admin')chapters=pending.chapters;
-      dirty=true;conflicted=pending.baseVersion!==baseVersion;
-      status(pending.baseVersion!==baseVersion?'Lokale Änderungen und Cloud-Stand unterscheiden sich. Bitte vor weiteren Änderungen abgleichen.':'Es gibt noch nicht übertragene Änderungen auf diesem Gerät.',true);
+      dirty=true;conflicted=user().role==='admin'&&pending.baseVersion!==baseVersion&&JSON.stringify(pending.chapters)!==baseSignature;
+      status(conflicted?'Lokale Änderungen und Cloud-Stand unterscheiden sich. Bitte vor weiteren Änderungen abgleichen.':'Es gibt noch nicht übertragene Änderungen auf diesem Gerät.',true);
     }
     _cache={...progressOf(personal),chapters:withAdditions(chapters,additions)};
     if(typeof window.normalizeAppDataSeniorQA==='function')window.normalizeAppDataSeniorQA();
     localStorage.setItem(LS_KEY,JSON.stringify(_cache));
-    if(!pending)status('Mit der Testdatenbank verbunden.');
+    if(!pending){status('Mit der Datenbank verbunden.');if(importLegacy)await save(_cache);}
   }
   async function persistSnapshot(snapshot){
     const sig=JSON.stringify(snapshot.chapters),psig=JSON.stringify(snapshot.progress);
@@ -85,12 +99,14 @@
     }
   }
   function save(data){
-    if(conflicted){status('Die lokalen Änderungen stehen im Konflikt mit der Cloud. Es wird nichts überschrieben.',true);return Promise.resolve(false);}
-    const snapshot={chapters:clone(baseChapters(data)),progress:clone(progressOf(data)),baseVersion};
+    const previous=JSON.parse(localStorage.getItem(pendingKey())||'null');
+    const snapshot={chapters:clone(baseChapters(data)),progress:clone(progressOf(data)),baseVersion:conflicted&&previous?previous.baseVersion:baseVersion};
     try{localStorage.setItem(LS_KEY,JSON.stringify(data));localStorage.setItem(pendingKey(),JSON.stringify(snapshot));}
     catch(_){status('Der Browserspeicher ist voll oder nicht verfügbar. Bitte Änderungen sichern.',true);return Promise.resolve(false);}
     dirty=true;
+    if(conflicted){status('Die lokalen Änderungen stehen im Konflikt mit der Cloud. Sie bleiben auf diesem Gerät gespeichert; es wird nichts überschrieben.',true);return Promise.resolve(false);}
     saving=saving.then(async()=>{
+      if(conflicted)return false;
       try{
         const stored=JSON.parse(localStorage.getItem(pendingKey())||'null');
         // Bei einem Konflikt aus einer vorherigen Sitzung niemals auf neuer Basis überschreiben.
@@ -98,10 +114,22 @@
         await persistSnapshot(snapshot);
         if(localStorage.getItem(pendingKey())===JSON.stringify(snapshot)){localStorage.removeItem(pendingKey());dirty=false;status('Änderungen online gespeichert.');}
         return true;
-      }catch(error){status(error.message,true);return false;}
+      }catch(error){if(error.code==='CONFLICT')conflicted=true;status(error.message,true);return false;}
     });
     return saving;
   }
+  async function retryPending(){
+    await saving;
+    const pending=JSON.parse(localStorage.getItem(pendingKey())||'null');
+    if(!pending){status('Alle Änderungen sind gespeichert.');return true;}
+    const remote=await getBase(),sig=JSON.stringify(remote.chapters);
+    if(user().role==='admin'&&((conflicted&&sig!==JSON.stringify(pending.chapters))||(sig!==baseSignature&&sig!==JSON.stringify(pending.chapters)))){
+      conflicted=true;status('Die Datenbank wurde auf einem anderen Gerät geändert. Bitte lokale Änderungen sichern und die Administration verständigen.',true);return false;
+    }
+    baseVersion=remote.doc?.updateTime||null;baseSignature=sig;conflicted=false;
+    return save(_cache);
+  }
+  function localBackup(){return {savedAt:new Date().toISOString(),projectId:config.firebaseProjectId,data:clone(_cache),pending:JSON.parse(localStorage.getItem(pendingKey())||'null')};}
   async function addEntry(type,de,cz,example=''){
     de=de.trim();cz=cz.trim();example=example.trim();
     if(!['vocab','sentence'].includes(type)||!de||!cz||de.length>2000||cz.length>2000||example.length>4000)throw new Error('Bitte gültige deutsche und tschechische Texte eingeben.');
@@ -129,12 +157,34 @@
   async function importBackup(input){
     if(user()?.role!=='admin')throw new Error('Nur für die Administration verfügbar.');
     const chapters=chaptersFromBackup(input);
-    if((await getBase()).doc)throw new Error('Es sind bereits Testinhalte vorhanden. Der Import überschreibt keine Daten.');
+    if((await getBase()).doc)throw new Error('Es sind bereits Inhalte vorhanden. Der Import überschreibt keine Daten.');
     await request('/app/data?currentDocument.exists=false',{method:'PATCH',body:JSON.stringify({fields:{chapters:{stringValue:JSON.stringify(chapters)}}})});
     const check=await getBase();
     if(JSON.stringify(check.chapters)!==JSON.stringify(chapters))throw new Error('Die Kontrolle der übertragenen Inhalte ist fehlgeschlagen.');
     await load();window.renderAdminList();
     return chapters;
+  }
+  async function verifyAndArchive(input){
+    if(user()?.role!=='admin')throw new Error('Nur für die Administration verfügbar.');
+    const original=chaptersFromBackup(input),current=await getBase();
+    if(JSON.stringify(original)!==JSON.stringify(current.chapters))throw new Error('Die Kapitel unterscheiden sich. Es wurde nichts übertragen; bitte zuerst abgleichen.');
+    const stats=(input.documents||[]).find(d=>d.name?.endsWith('/app/stats'));
+    const stable=value=>JSON.stringify(Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b))));
+    if(stats){
+      const existing=await request('/app/stats',{},true);
+      if(existing&&stable(existing.fields)!==stable(stats.fields))throw new Error('Es existiert bereits ein anderer historischer Lernstand. Es wird nichts überschrieben.');
+      if(!existing)await request('/app/stats?currentDocument.exists=false',{method:'PATCH',body:JSON.stringify({fields:stats.fields})});
+      const check=await request('/app/stats');
+      if(stable(check.fields)!==stable(stats.fields))throw new Error('Kontrolle des historischen Lernstands fehlgeschlagen.');
+    }
+    status('Alle Kapitel stimmen mit der Sicherung überein. Historischer Lernstand ist gesichert.');
+    return true;
+  }
+  async function exportContent(){
+    if(user()?.role!=='admin')throw new Error('Nur für die Administration verfügbar.');
+    const [shared,additions,stats]=await Promise.all([getBase(),listAdditions(),request('/app/stats',{},true)]);
+    return {exportedAt:new Date().toISOString(),projectId:config.firebaseProjectId,
+      documents:[shared.doc,stats,...additions].filter(Boolean)};
   }
   function poll(){
     if(pollStarted)return;pollStarted=true;
@@ -152,7 +202,7 @@
       }catch(_){status('Cloud derzeit nicht erreichbar. Die geladenen Inhalte bleiben nutzbar.',true);}
     },30000);
   }
-  window.marcelaData=Object.freeze({load,save,addEntry,importBackup,chaptersFromBackup,status});
+  window.marcelaData=Object.freeze({load,save,retryPending,localBackup,addEntry,importBackup,verifyAndArchive,exportContent,chaptersFromBackup,status});
   window.loadData=load;
   window.cloudLoad=load;
   window.cloudSave=save;

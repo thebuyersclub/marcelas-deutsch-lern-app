@@ -1265,7 +1265,7 @@ const FB_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/
 const FB_KEY = (window.MARCELA_CONFIG || {}).firebaseApiKey || '';
 
 async function fbRead(doc) {
-  if (!window.marcelaTestEnvironment?.ready()) throw new Error('Testdatenbank ist nicht eingerichtet.');
+  if (!window.marcelaTestEnvironment?.ready()) throw new Error('Datenbank ist nicht eingerichtet.');
   try {
     const r = await fetch(FB_URL + doc + '?key=' + FB_KEY, { headers: await window.marcelaAuth.headers(), signal: AbortSignal.timeout(5000) });
     if (!r.ok) return null;
@@ -1283,7 +1283,7 @@ async function fbRead(doc) {
 }
 
 async function fbWrite(doc, fields) {
-  if (!window.marcelaTestEnvironment?.ready()) throw new Error('Testdatenbank ist nicht eingerichtet.');
+  if (!window.marcelaTestEnvironment?.ready()) throw new Error('Datenbank ist nicht eingerichtet.');
   try {
     // Convert to Firestore REST format
     const fsFields = {};

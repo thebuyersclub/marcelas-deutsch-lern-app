@@ -1,6 +1,6 @@
-// Öffentliche Test-Konfiguration. Hier niemals Passwörter oder geheime API-Schlüssel eintragen.
+// Öffentliche Konfiguration. Die abgesicherte neue Datenbank wird dauerhaft verwendet.
 window.MARCELA_CONFIG = Object.freeze({
-  environment: 'test',
+  environment: 'production',
   firebaseProjectId: 'marcela-deutsch-test',
   firebaseApiKey: 'AIzaSyBMmpVE3H2h_LPkeanfmCqJBtDe8L2mZK4',
   authMethod: 'password',

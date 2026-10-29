@@ -3426,7 +3426,7 @@ async function init() {
   refreshTimers();
   startLiveSync();
   if (signedInUser.role === 'admin') showView('home');
-  else goLearn();
+  else showView('splash');
   loadWeather(); // Load weather on startup
   loadHoroscope(); // Load horoscope on startup
 

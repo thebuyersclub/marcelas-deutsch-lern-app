@@ -6,9 +6,16 @@
   const base='https://firestore.googleapis.com/v1/'+root;
   let baseVersion=null, baseSignature=null, progressSignature=null, saving=Promise.resolve();
   let pollStarted=false, dirty=false, conflicted=false;
+  let progressClient='',progressSequence=0,progressAckSequence=0,progressAck=null;
+  let localRevision=0;
   const clone=value=>JSON.parse(JSON.stringify(value));
   const user=()=>window.marcelaAuth.user();
-  const pendingKey=()=>LS_KEY+'_pending';
+  const pendingKey=()=>LS_KEY+'_pending'+(progressClient?'_'+progressClient:'');
+  function progressClientForTab(){
+    const key=LS_KEY+'_progress_tab';
+    try{let id=sessionStorage.getItem(key);if(!id){id=crypto.randomUUID();sessionStorage.setItem(key,id);}return id;}
+    catch(_){return progressClient||crypto.randomUUID();}
+  }
   const statusId='marcela-save-status';
   function status(message,error=false) {
     let box=document.getElementById(statusId);
@@ -28,7 +35,55 @@
     }
     return result;
   }
-  function progressOf(data){return {stats:data.stats||{},streak:data.streak||0,weak:data.weak||{},examRecords:data.examRecords||{},legacyImported:data.legacyImported===true};}
+  function progressOf(data){return {stats:data.stats||{},streak:data.streak||0,weak:data.weak||{},examRecords:data.examRecords||{},resets:data.resets||{},legacyImported:data.legacyImported===true};}
+  function mergeProgress(remote,baseline,local){
+    const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+    function merge(r,b,l){
+      if(same(l,b))return clone(r===undefined?null:r);
+      if(same(r,b)||r===undefined)return l===undefined?undefined:clone(l);
+      if(l===undefined)return r; // Gleichzeitig erneut falsch beantwortete Einträge bleiben erhalten.
+      if(r&&l&&typeof r==='object'&&typeof l==='object'&&!Array.isArray(r)&&!Array.isArray(l)){
+        if(Number.isFinite(r.ts)&&Number.isFinite(l.ts))return clone(l.ts>r.ts?l:r);
+        const out={};for(const key of new Set([...Object.keys(r),...Object.keys(b||{}),...Object.keys(l)])){
+          const v=merge(r[key],b?.[key],l[key]);if(v!==undefined)Object.defineProperty(out,key,{value:v,enumerable:true,writable:true,configurable:true});
+        }return out;
+      }
+      return clone(r); // Gleichzeitige widersprüchliche Änderungen nicht blind ersetzen.
+    }
+    const out=merge(progressOf(remote),progressOf(baseline),progressOf(local));out.stats={...(remote.stats||{})};
+    for(const day of new Set([...Object.keys(baseline.stats||{}),...Object.keys(local.stats||{})])){
+      const delta=Number(local.stats?.[day]||0)-Number(baseline.stats?.[day]||0);
+      const reset=local.resets?.[day],oldReset=baseline.resets?.[day];
+      if(reset?.id&&reset.id!==oldReset?.id&&Number(reset.ts)>Number(remote.resets?.[day]?.ts||0))out.stats[day]=Number(local.stats?.[day]||0);
+      else if(delta>0)out.stats[day]=Number(remote.stats?.[day]||0)+delta;
+    }
+    out.legacyImported=!!(remote.legacyImported||local.legacyImported);
+    out.streak=0;const date=new Date();
+    for(let i=0;i<730;i++){
+      const day=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
+      if(Number(out.stats[day]||0)<3600)break;out.streak++;date.setDate(date.getDate()-1);
+    }
+    return out;
+  }
+  async function persistProgress(snapshot){
+    for(let attempt=0;attempt<4;attempt++){
+      const path='/progress/'+encodeURIComponent(user().uid),doc=await request(path,{},true);
+      const remote=doc?JSON.parse(doc.fields?.data?.stringValue||'{}'):{};
+      const previous=remote._sync?.[snapshot.progressClient];
+      if(previous&&previous.sequence>=snapshot.progressSequence){
+        progressAck=clone(snapshot.progress);progressAckSequence=snapshot.progressSequence;progressSignature=JSON.stringify(snapshot.progress);return;
+      }
+      const baseline=previous&&previous.sequence>snapshot.progressBaseSequence?previous.local:snapshot.progressBase;
+      const merged=mergeProgress(remote,baseline||{},snapshot.progress);
+      merged._sync={...(remote._sync||{}),[snapshot.progressClient]:{sequence:snapshot.progressSequence,local:snapshot.progress}};
+      const condition=doc?'currentDocument.updateTime='+encodeURIComponent(doc.updateTime):'currentDocument.exists=false';
+      try{
+        await request(path+'?'+condition,{method:'PATCH',body:JSON.stringify({fields:{data:{stringValue:JSON.stringify(merged)},syncVersion:{integerValue:'2'}}})});
+        progressAck=clone(snapshot.progress);progressAckSequence=snapshot.progressSequence;progressSignature=JSON.stringify(snapshot.progress);return;
+      }catch(error){if(error.code!=='CONFLICT')throw error;}
+    }
+    throw new Error('Der Lernstand wird gerade auf einem anderen Gerät gespeichert. Deine Änderungen bleiben lokal erhalten; bitte erneut versuchen.');
+  }
   function baseChapters(data){return (data.chapters||[]).filter(ch=>!ch._dictionaryAdditions);}
   async function getBase() {
     const doc=await request('/app/data',{},true);
@@ -57,6 +112,9 @@
     const [remote,progress,additions]=await Promise.all([getBase(),request('/progress/'+encodeURIComponent(user().uid),{},true),listAdditions()]);
     baseVersion=remote.doc?.updateTime||null;baseSignature=JSON.stringify(remote.chapters);
     let personal=progress?JSON.parse(progress.fields?.data?.stringValue||'{}'):{};
+    if(!progressClient)progressClient=progressClientForTab();
+    progressAck=clone(progressOf(personal));progressAckSequence=personal._sync?.[progressClient]?.sequence||0;
+    progressSequence=Math.max(progressSequence,progressAckSequence);
     progressSignature=JSON.stringify(progressOf(personal));
     let importLegacy=false;
     if(user().role==='learner'&&!personal.legacyImported){
@@ -72,8 +130,13 @@
       }
     }
     let chapters=remote.chapters;
-    const pending=JSON.parse(localStorage.getItem(pendingKey())||'null');
+    let pending=JSON.parse(localStorage.getItem(pendingKey())||'null');
+    if(!pending){
+      const legacy=JSON.parse(localStorage.getItem(LS_KEY+'_pending')||'null');
+      if(legacy){pending=legacy;localStorage.setItem(pendingKey(),JSON.stringify(legacy));localStorage.removeItem(LS_KEY+'_pending');}
+    }
     if(pending){
+      if(pending.progressClient){progressClient=pending.progressClient;progressSequence=Math.max(progressSequence,pending.progressSequence||0);progressAck=pending.progressBase||progressAck;progressAckSequence=pending.progressBaseSequence||0;}
       // Lokale Änderungen behalten. Ein Konflikt wird niemals automatisch überschrieben.
       personal=pending.progress;
       if(user().role==='admin')chapters=pending.chapters;
@@ -94,13 +157,14 @@
       baseVersion=result.updateTime;baseSignature=sig;
     }
     if(psig!==progressSignature){
-      await request('/progress/'+encodeURIComponent(user().uid),{method:'PATCH',body:JSON.stringify({fields:{data:{stringValue:psig}}})});
-      progressSignature=psig;
+      await persistProgress(snapshot);
     }
   }
   function save(data){
+    localRevision++;
     const previous=JSON.parse(localStorage.getItem(pendingKey())||'null');
-    const snapshot={chapters:clone(baseChapters(data)),progress:clone(progressOf(data)),baseVersion:conflicted&&previous?previous.baseVersion:baseVersion};
+    const snapshot={chapters:clone(baseChapters(data)),progress:clone(progressOf(data)),baseVersion:conflicted&&previous?previous.baseVersion:baseVersion,
+      progressClient,progressSequence:++progressSequence,progressBase:clone(progressAck||{}),progressBaseSequence:progressAckSequence};
     try{localStorage.setItem(LS_KEY,JSON.stringify(data));localStorage.setItem(pendingKey(),JSON.stringify(snapshot));}
     catch(_){status('Der Browserspeicher ist voll oder nicht verfügbar. Bitte Änderungen sichern.',true);return Promise.resolve(false);}
     dirty=true;
@@ -217,11 +281,18 @@
     if(pollStarted)return;pollStarted=true;
     setInterval(async()=>{
       if(dirty||!user()?.verified)return;
+      const revision=localRevision;
       try{
-        const [remote,additions]=await Promise.all([getBase(),listAdditions()]);
-        if(dirty)return;
+        const [remote,additions,personalDoc]=await Promise.all([getBase(),listAdditions(),request('/progress/'+encodeURIComponent(user().uid),{},true)]);
+        if(dirty||revision!==localRevision)return;
         baseVersion=remote.doc?.updateTime||null;baseSignature=JSON.stringify(remote.chapters);
         _cache.chapters=withAdditions(remote.chapters,additions);
+        if(personalDoc){
+          const personal=JSON.parse(personalDoc.fields?.data?.stringValue||'{}');
+          Object.assign(_cache,progressOf(personal));progressAck=clone(progressOf(personal));progressSignature=JSON.stringify(progressAck);
+          progressAckSequence=personal._sync?.[progressClient]?.sequence||0;progressSequence=Math.max(progressSequence,progressAckSequence);
+          window.refreshStats?.();window.refreshTimers?.();
+        }
         localStorage.setItem(LS_KEY,JSON.stringify(_cache));
         const view=document.querySelector('.view.active')?.id;
         if(view==='home')window.renderAdminList();

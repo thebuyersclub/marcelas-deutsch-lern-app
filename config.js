@@ -4,5 +4,5 @@ window.MARCELA_CONFIG = Object.freeze({
   firebaseProjectId: 'marcela-deutsch-test',
   firebaseApiKey: 'AIzaSyBMmpVE3H2h_LPkeanfmCqJBtDe8L2mZK4',
   authMethod: 'password',
-  translatorEndpoint: 'https://marcelas-deutsch-lern-app.netlify.app/api/translator',
+  translatorEndpoint: 'https://marcelas-deutsch-api.vercel.app/api/translator',
 });

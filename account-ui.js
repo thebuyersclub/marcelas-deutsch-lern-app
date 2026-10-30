@@ -76,6 +76,10 @@
         catch(error){form.querySelector('[role=status]').textContent=error.message;}
         finally{button.disabled=false;}
       });document.getElementById('learn-home').querySelector('.scroll').append(box);
+      const retry=document.createElement('button');retry.type='button';retry.textContent='Lernstand erneut speichern';
+      retry.addEventListener('click',async()=>{retry.disabled=true;try{await window.marcelaData.retryPending();}catch(error){window.marcelaData.status(error.message,true);}finally{retry.disabled=false;}});box.append(retry);
+      const local=document.createElement('button');local.type='button';local.textContent='Lokalen Lernstand sichern';
+      local.addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(window.marcelaData.localBackup(),null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='marcela-lokaler-lernstand.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});box.append(local);
     }
   }
   const originalShow=window.showView;

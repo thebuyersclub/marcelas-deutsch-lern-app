@@ -2839,7 +2839,2187 @@ function renderTyping(item, c) {
 function checkTyping(corr) {
   const el = document.getElementById('typing-in');
   if (!el || !el.value.trim()) return;
-  const ok = norm(e…33648 tokens truncated…var(--ink3)">Zkušební simulace ze všech kapitol</div>'
+  const ok = norm(el.value) === norm(corr);
+  el.classList.add(ok ? 'ok' : 'bad');
+  el.disabled = true;
+  if (ok) _pScore++;
+  showFeedback(ok, corr);
+}
+
+// QUESTION-ANSWER
+function renderQA(item, c) {
+  const base = item.base || '';
+  const solution = item.solution || '';
+  c.innerHTML =
+    '<div class="typing-q"><div class="tq-badge">Frage-Antwortspiel</div><div class="tq-word">' + esc(base) + '</div><div class="p-hint">Schreibe die passende Frage oder Antwort.</div></div>'
+    + '<div class="in-area"><input class="big-in" id="qa-in" placeholder="Lösung eingeben…" autocomplete="off" autocorrect="off"/></div>'
+    + '<button class="btn-check" onclick="checkQA()">Prüfen</button>'
+    + '<button class="btn-skip" onclick="skipCard()">Überspringen →</button>';
+  setTimeout(() => {
+    const el = document.getElementById('qa-in');
+    if (el) { el.focus(); el.addEventListener('keydown', e => { if (e.key === 'Enter') checkQA(); }); }
+  }, 80);
+}
+
+function checkQA() {
+  const item = _pQ[_pI];
+  const el = document.getElementById('qa-in');
+  if (!item || !el || !el.value.trim()) return;
+  const corr = item.solution || '';
+  const ok = norm(el.value) === norm(corr);
+  el.classList.add(ok ? 'ok' : 'bad');
+  el.disabled = true;
+  if (ok) _pScore++;
+  showFeedback(ok, corr);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SEKTION: UHRZEIT-ÜBUNG
+// Zweck:   Zufällige Uhrzeit anzeigen, auf Deutsch eintippen.
+//          numToDE(n) konvertiert 0-59 in deutsche Zahlwörter.
+//          KRITISCH: "einundzwanzig" nicht "einsundzwanzig"! (o===1 → "ein")
+//          Antwort via globale _clockH/_clockM/_clockMins (kein onclick-String).
+//          Grund: Deutsche Sonderzeichen (ü,ö,ß) brechen onclick-Attribute!
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CLOCK
+const ONES = ['null','eins','zwei','drei','vier','fünf','sechs','sieben','acht','neun',
+              'zehn','elf','zwölf','dreizehn','vierzehn','fünfzehn','sechzehn','siebzehn',
+              'achtzehn','neunzehn'];
+const TENS = ['','','zwanzig','dreißig','vierzig','fünfzig'];
+
+function numToDE(n) {
+  n = parseInt(n, 10);
+  if (n === 0) return 'null';
+  if (n === 1) return 'eins';
+  if (n < 20) return ONES[n];
+  const t = Math.floor(n / 10), o = n % 10;
+  if (o === 0) return TENS[t];
+  // Use 'ein' (not 'eins') in compound numbers like einundzwanzig
+  const ones = o === 1 ? 'ein' : ONES[o];
+  return ones + 'und' + TENS[t];
+}
+
+// Store current clock answer globally — avoids special char issues in onclick
+let _clockH = '', _clockM = '', _clockMins = 0;
+
+function renderClock(item, c) {
+  const h = item.hours, m = item.minutes;
+  const hStr = String(h).padStart(2, '0');
+  const mStr = String(m).padStart(2, '0');
+  _clockH = numToDE(h);
+  _clockM = numToDE(m);
+  _clockMins = m;
+
+  c.innerHTML =
+    '<div class="clock-display">'
+    + '<div class="clock-label">Wie spät ist es?</div>'
+    + '<div class="clock-time">' + hStr + ':' + mStr + '</div>'
+    + '<div class="clock-question">Schreibe die Uhrzeit auf Deutsch</div>'
+    + '</div>'
+    + '<div class="clock-answer-row">'
+    + '<input class="clock-input" id="clock-h" placeholder="Stunden" autocomplete="off" autocorrect="off" autocapitalize="off"/>'
+    + '<span class="clock-static">Uhr</span>'
+    + (m > 0 ? '<input class="clock-input" id="clock-m" placeholder="Minuten" autocomplete="off" autocorrect="off" autocapitalize="off"/>' : '')
+    + '</div>'
+    + '<div style="text-align:center;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:14px">Antwort: ' + _clockH + ' Uhr' + (m > 0 ? ' ' + _clockM : '') + '</div>'
+    + '<button class="btn-check" onclick="checkClock()">Prüfen</button>'
+    + '<button class="btn-skip" onclick="skipCard()">Überspringen →</button>';
+
+  setTimeout(() => {
+    const elH = document.getElementById('clock-h');
+    const elM = document.getElementById('clock-m');
+    if (elH) {
+      elH.focus();
+      elH.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { if (elM) elM.focus(); else checkClock(); }
+      });
+    }
+    if (elM) elM.addEventListener('keydown', e => { if (e.key === 'Enter') checkClock(); });
+  }, 80);
+}
+
+function checkClock() {
+  const inH = document.getElementById('clock-h');
+  const inM = document.getElementById('clock-m');
+  if (!inH) return;
+
+  const valH = norm(inH.value);
+  const okH = valH === norm(_clockH);
+  const okM = _clockMins === 0 ? true : (inM ? norm(inM.value) === norm(_clockM) : false);
+  const ok = okH && okM;
+
+  inH.classList.add(okH ? 'ok' : 'bad');
+  inH.disabled = true;
+  if (inM) { inM.classList.add(okM ? 'ok' : 'bad'); inM.disabled = true; }
+
+  if (ok) _pScore++;
+  const answer = _clockH + ' Uhr' + (_clockMins > 0 ? ' ' + _clockM : '');
+  showFeedback(ok, answer);
+}
+
+// WEAK SPOTS RENDER — uses original mode per item
+function renderWeak(item, c) {
+  // Render exactly like the original mode
+  const mode = item.mode || 'typing';
+  if (mode === 'flashcard') {
+    renderFlashcard(item, c);
+  } else if (mode === 'mc') {
+    renderMC(item, c);
+  } else if (mode === 'order') {
+    renderOrder(item, c);
+  } else if (mode === 'fill') {
+    renderFill(item, c);
+  } else if (mode === 'clock') {
+    renderClock(item, c);
+  } else if (mode === 'qa') {
+    renderQA(item, c);
+  } else {
+    // typing / fallback
+    renderTyping(item, c);
+  }
+}
+
+function handleWeakResult(ok) {
+  const item = _pQ[_pI];
+  if (!item || !item._weakKey) return;
+  if (!_cache.weak) _cache.weak = {};
+  if (ok) {
+    if (_cache.weak[item._weakKey]) {
+      _cache.weak[item._weakKey].rightStreak = (_cache.weak[item._weakKey].rightStreak || 0) + 1;
+      if (_cache.weak[item._weakKey].rightStreak >= 2) {
+        delete _cache.weak[item._weakKey];
+        const remaining = Object.keys(_cache.weak).length;
+        showToast(remaining > 0 ? 'Gemeistert! Noch ' + remaining + ' übrig' : 'Alle gemeistert!', 'ok');
+      }
+    }
+  } else {
+    if (_cache.weak[item._weakKey]) _cache.weak[item._weakKey].rightStreak = 0;
+  }
+  save(_cache);
+  updateWeakCount();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SEKTION: FEEDBACK-OVERLAY
+// Zweck:   Zeigt Richtig/Falsch-Overlay nach jeder Antwort.
+//          trackWeakItem()/handleWeakResult() hier aufgerufen.
+//          Motivationstexte (_motivTexts) bei Fehlern rotierend eingeblendet.
+//          KRITISCH: item = _pQ[_pI] VOR _pI-Increment erfassen!
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// FEEDBACK
+function showFeedback(ok, answer) {
+  const checkSVG = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>';
+  const crossSVG = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+  document.getElementById('fb-emoji').innerHTML = ok ? checkSVG : crossSVG;
+  document.getElementById('fb-title').textContent = ok ? 'Richtig!' : 'Nicht ganz…';
+  const fbAns = document.getElementById('fb-answer');
+  if (!ok) {
+    const motiv = _motivTexts[_motivIdx % _motivTexts.length];
+    _motivIdx++;
+    fbAns.innerHTML = 'Richtige Antwort: ' + answer
+      + '<br><span style="color:#C47B5A;font-style:italic;font-size:13px;margin-top:6px;display:block">' + motiv + '</span>';
+  } else {
+    fbAns.textContent = 'Weiter so, Marcela!';
+  }
+  document.getElementById('fb-overlay').classList.add('show');
+  // Track for weak spots — capture item NOW before _pI changes
+  const item = _pQ[_pI];
+  if (_pMode === 'weak') {
+    handleWeakResult(ok);
+  } else if (item) {
+    trackWeakItem(item, ok, answer);
+  }
+}
+
+function trackWeakItem(item, ok, answer) {
+  if (!_cache.weak) _cache.weak = {};
+  let key = '', weakEntry = null;
+
+  if (item.ptype === 'vocab' || item.ptype === 'sentence') {
+    key = (_curChId||'') + '_' + (item.id||'') + '_' + (item._dir||'cz-de');
+    weakEntry = {
+      mode: _pMode,          // flashcard, mc, typing
+      ptype: item.ptype,
+      dir: item._dir || 'cz-de',
+      id: item.id,
+      chId: _curChId,
+      de: item.de, cz: item.cz, example: item.example || ''
+    };
+  } else if (item.ptype === 'order') {
+    key = (_curChId||'') + '_order_' + (item.id||'');
+    weakEntry = { mode: 'order', ptype: 'order', id: item.id, chId: _curChId, correct: item.correct };
+  } else if (item.ptype === 'fill') {
+    key = (_curChId||'') + '_fill_' + (item.id||'');
+    weakEntry = { mode: 'fill', ptype: 'fill', id: item.id, chId: _curChId,
+      sentence: item.sentence, correct: item.correct, options: item.options };
+  } else if (item.ptype === 'qa') {
+    key = (_curChId||'') + '_qa_' + (item.id||'');
+    weakEntry = { mode: 'qa', ptype: 'qa', id: item.id, chId: _curChId,
+      base: item.base, solution: item.solution };
+  } else if (item.ptype === 'clock') {
+    key = 'clock_' + item.hours + '_' + item.minutes;
+    weakEntry = { mode: 'clock', ptype: 'clock', hours: item.hours, minutes: item.minutes };
+  } else {
+    return;
+  }
+  if (!key || !weakEntry) return;
+
+  if (!ok) {
+    if (!_cache.weak[key]) {
+      _cache.weak[key] = { ...weakEntry, rightStreak: 0 };
+    } else {
+      _cache.weak[key].rightStreak = 0;
+    }
+  } else {
+    if (_cache.weak[key]) {
+      _cache.weak[key].rightStreak = (_cache.weak[key].rightStreak || 0) + 1;
+      if (_cache.weak[key].rightStreak >= 2) {
+        delete _cache.weak[key];
+      }
+    }
+  }
+  save(_cache);
+}
+
+function nextCard() {
+  document.getElementById('fb-overlay').classList.remove('show');
+  _fillChosen = '';
+  updateWeakCount();
+  const item = _pQ[_pI];
+  _pI++;
+  renderCard();
+}
+
+function skipCard() {
+  const item = _pQ[_pI];
+  _pI++;
+  renderCard();
+}
+
+// RESULT
+function showResult() {
+  stopTimer(); // Stop timer on result screen
+  // Add current round's score to totals
+  const totalScore = _pTotalScore + _pScore;
+  const totalCards = _pTotalCards + _pQ.length;
+  const rounds = _pRound;
+  const pct = totalCards ? Math.round(totalScore / totalCards * 100) : 0;
+  const col = pct >= 80 ? '#34C759' : pct >= 50 ? '#FF9500' : '#FF3B30';
+  const trophySVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
+  const starSVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+  const muscSVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+  const emoji = pct >= 80 ? trophySVG : pct >= 50 ? starSVG : muscSVG;
+  const msg = pct >= 80 ? 'Ausgezeichnet!' : pct >= 50 ? 'Gut gemacht!' : 'Weiter so, Marcela!';
+  const c2 = Math.PI * 2 * 54, off = c2 * (1 - pct / 100);
+  // Reset round counters
+  _pTotalScore = 0; _pTotalCards = 0; _pRound = 1;
+  document.getElementById('p-content').innerHTML =
+    '<div class="result-wrap">'
+    + '<div class="r-emoji" style="display:flex;justify-content:center;margin-bottom:8px">' + emoji + '</div>'
+    + '<div class="r-title">' + msg + '</div>'
+    + '<div class="r-sub">' + totalScore + ' von ' + totalCards + ' richtig' + (rounds > 1 ? ' · ' + rounds + ' Runden' : '') + '</div>'
+    + '<div class="r-ring"><svg width="130" height="130" viewBox="0 0 130 130">'
+    + '<circle cx="65" cy="65" r="54" fill="none" stroke="#E5E5EA" stroke-width="10" transform="rotate(-90 65 65)"/>'
+    + '<circle cx="65" cy="65" r="54" fill="none" stroke="' + col + '" stroke-width="10" stroke-linecap="round"'
+    + ' stroke-dasharray="' + c2.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '" transform="rotate(-90 65 65)"'
+    + ' style="transition:stroke-dashoffset 1s ease"/>'
+    + '</svg><div class="r-ring-txt"><div class="r-pct" style="color:' + col + '">' + pct + '%</div><div class="r-frac">' + totalScore + '/' + totalCards + '</div></div></div>'
+    + '<div class="r-btns">'
+    + '<button class="r-btn1" onclick="startPractice(\'' + _pMode + '\')"><span style="display:inline-flex;align-items:center;gap:6px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Nochmal üben</span></button>'
+    + '<button class="r-btn2" onclick="startModeSelect()">Anderen Modus</button>'
+    + '<button class="r-btn2" onclick="showView(\'splash\')">Zur Startseite <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>'
+    + '</div></div>';
+  document.getElementById('p-fill').style.width = '100%';
+  document.getElementById('p-count').textContent = _pQ.length + ' / ' + _pQ.length;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MODALS
+// ═══════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+function saveNewChapter() {
+  const name = val('nc-name');
+  if (!name) { showToast('Bitte Namen eingeben!', 'err'); return; }
+  if (!_cache.chapters) _cache.chapters = [];
+  const ch = { id: uid(), name, desc: val('nc-desc'), vocab: [], grammar: [], sentences: [], lessons: [] };
+  _cache.chapters.push(ch);
+  save(_cache);
+  closeModal('m-chapter');
+  clear('nc-name', 'nc-desc');
+  openChapter(ch.id);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INSTALL BANNER
+// ═══════════════════════════════════════════════════════════
+function dismissBanner() {
+  document.getElementById('install-banner').style.display = 'none';
+  localStorage.setItem('banner_dismissed', '1');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════
+function uid() { return Math.random().toString(36).slice(2, 9); }
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function clear(...ids) { ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+function escJ(s) { return String(s ?? '').replace(/[\\'"<>&\u0000-\u001f\u2028\u2029]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4,'0')); }
+function norm(s) { return String(s||'').toLowerCase().replace(/[.,!?;:]/g,'').replace(/\s+/g,' ').trim(); }
+
+let _toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + type + ' show';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SEKTION: GEHEIMCODE-ZUGANG
+// Zweck:   Versteckter Zugang zur Adminansicht; Rechte werden separat geprüft.
+//          Kein sichtbarer Button – Sicherheit durch Obskurität.
+//          Sequenzen als Zahlenarrays: 0=Streak, 1=Min.heute, 2=Ziele.
+//          Admin:    [0,1,2,0,0] = Streak→Min→Ziele→Streak→Streak
+//          _sqLearn() für Learn-Button: zuerst prüfen, dann goLearn().
+//          Timeout: 8s zwischen Taps, dann Reset.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ── SECRET SEQUENCE ──
+(function() {
+  var seq = [0,1,2,0,0]; // admin: streak,min,goals,streak,streak
+  var buf = [];
+  var timer = null;
+
+  window._sq = function(n) {
+    // Original admin sequence
+    clearTimeout(timer);
+    buf.push(n);
+    // Debug: flash tiny dot in corner
+    var dot = document.getElementById('_sq_dot');
+    if (!dot) {
+      dot = document.createElement('div');
+      dot.id = '_sq_dot';
+      dot.style.cssText = 'position:fixed;bottom:8px;left:8px;width:6px;height:6px;border-radius:50%;background:#C47B5A;z-index:9999;opacity:0;transition:opacity .1s';
+      document.body.appendChild(dot);
+    }
+    dot.style.opacity = '1';
+    dot.title = buf.length + '/' + seq.length;
+    setTimeout(function(){ dot.style.opacity = '0'; }, 300);
+    if (buf.length > seq.length) buf = buf.slice(buf.length - seq.length);
+    var match = buf.length === seq.length && buf.every(function(v,i){ return v === seq[i]; });
+    if (match) {
+      buf = [];
+      showView('home');
+      return;
+    }
+    timer = setTimeout(function(){ buf = []; }, 8000);
+  };
+
+  window._sqLearn = function() { goLearn(); };
+})();
+
+// ═══════════════════════════════════════════════════════════
+//  WETTER (Open-Meteo — kostenlos, kein API Key)
+// ═══════════════════════════════════════════════════════════
+const WX_CODES = {
+  0:'Klar',1:'Meist klar',2:'Teilweise bewölkt',3:'Bewölkt',
+  45:'Nebel',48:'Reifnebel',
+  51:'Leichter Niesel',53:'Niesel',55:'Starker Niesel',
+  61:'Leichter Regen',63:'Regen',65:'Starker Regen',
+  71:'Leichter Schnee',73:'Schnee',75:'Starker Schnee',
+  80:'Leichte Schauer',81:'Schauer',82:'Starke Schauer',
+  85:'Schneeschauer',86:'Starke Schneeschauer',
+  95:'Gewitter',96:'Gewitter+Hagel',99:'Schweres Gewitter'
+};
+const WX_ICONS = {
+  0:'☀️',1:'🌤️',2:'⛅',3:'☁️',
+  45:'🌫️',48:'🌫️',
+  51:'🌦️',53:'🌧️',55:'🌧️',
+  61:'🌦️',63:'🌧️',65:'🌧️',
+  71:'🌨️',73:'❄️',75:'❄️',
+  80:'🌦️',81:'🌧️',82:'⛈️',
+  85:'🌨️',86:'🌨️',
+  95:'⛈️',96:'⛈️',99:'⛈️'
+};
+const DAY_NAMES = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const MONTH_NAMES = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const WEEKDAY_FULL = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SEKTION: FISCHE-HOROSKOP
+// Zweck:   Statischer motivierender Text ohne API-Zugriff.
+//          Tap-Zyklus: Icon → Tschechisch → Deutsch → Icon → ...
+//          Einmal pro App-Start generiert, gecacht in _horoscopeDE/_CZ.
+//          Fallback auf statischen Text wenn API nicht erreichbar.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ── HOROSKOP FISCHE ──
+let _horoscopeLang = 'icon'; // icon, cz, de
+let _horoscopeDE = '';
+let _horoscopeCZ = '';
+let _horoscopeLoaded = false;
+
+async function loadHoroscope() {
+  if (_horoscopeLoaded) return;
+  _horoscopeDE = 'Die Sterne bringen dir heute Freude und Erfolg!';
+  _horoscopeCZ = 'Dnes ti hvězdy přinášejí radost a úspěch!';
+  _horoscopeLoaded = true;
+  updateHoroscopeDisplay();
+}
+
+function updateHoroscopeDisplay() {
+  const textEl = document.getElementById('horoscope-text');
+  const iconWrap = document.getElementById('horoscope-icon-wrap');
+  if (!textEl || !iconWrap) return;
+  if (_horoscopeLang === 'icon') {
+    textEl.style.display = 'none';
+    iconWrap.style.display = 'flex';
+  } else {
+    textEl.style.display = '-webkit-box';
+    iconWrap.style.display = 'none';
+    textEl.textContent = _horoscopeLang === 'de' ? (_horoscopeDE || 'Wird geladen…') : (_horoscopeCZ || 'Načítám…');
+  }
+}
+
+function toggleHoroscope() {
+  if (!_horoscopeLoaded) {
+    // Show loading state, start loading
+    const el = document.getElementById('horoscope-text');
+    if (el) { el.style.display = 'block'; el.textContent = '…'; }
+    document.getElementById('horoscope-icon-wrap').style.display = 'none';
+    loadHoroscope();
+    return;
+  }
+  // Cycle: icon → cz → de → icon → ...
+  if (_horoscopeLang === 'icon') {
+    _horoscopeLang = 'cz';
+    updateHoroscopeDisplay();
+  } else if (_horoscopeLang === 'cz') {
+    _horoscopeLang = 'de';
+    updateHoroscopeDisplay();
+  } else {
+    _horoscopeLang = 'icon';
+    updateHoroscopeDisplay();
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SEKTION: WETTER-WIDGET
+// Zweck:   Aktuelles Wetter + 7-Tage-Vorschau auf der Startseite.
+//          API: Open-Meteo (kein Key, kostenlos, CORS erlaubt).
+//          Geocoding: Nominatim OpenStreetMap (Stadtname aus GPS-Koordinaten).
+//          Fallback: St. Pölten (48.2049, 15.6256) wenn GPS verweigert oder nicht verfügbar.
+//          Datum/Wochentag: sofort beim Aufruf, ohne API-Abhängigkeit.
+//          WX_ICONS/WX_CODES: WMO-Wettercodes → Emoji + Textbeschreibung.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function loadWeather() {
+  // Update date/weekday immediately
+  const now = new Date();
+  const dayEl = document.getElementById('date-day');
+  const monthEl = document.getElementById('date-month');
+  const wdEl = document.getElementById('date-weekday');
+  if (dayEl) dayEl.textContent = now.getDate();
+  if (monthEl) monthEl.textContent = MONTH_NAMES[now.getMonth()];
+  if (wdEl) wdEl.textContent = WEEKDAY_FULL[now.getDay()];
+
+  // Get location
+  // St. Pölten als Fallback wenn GPS nicht verfügbar oder verweigert
+  const wxFallback = () => loadWeatherByCoords(48.2049, 15.6256, 'St. Pölten');
+  if (!navigator.geolocation) { wxFallback(); return; }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lat = pos.coords.latitude.toFixed(4);
+    const lon = pos.coords.longitude.toFixed(4);
+    try {
+      const geoResp = await fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json');
+      const geo = await geoResp.json();
+      const city = geo.address?.city || geo.address?.town || geo.address?.village || geo.address?.municipality || 'Aktueller Standort';
+      loadWeatherByCoords(lat, lon, city);
+    } catch(e) { loadWeatherByCoords(lat, lon, 'Aktueller Standort'); }
+  }, wxFallback);
+}
+
+async function loadWeatherByCoords(lat, lon, city) {
+  try {
+    const locEl = document.getElementById('wx-location');
+    if (locEl) locEl.textContent = city;
+
+    // Fetch weather — current + 7 days + sunrise/sunset
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon
+      + '&current=temperature_2m,weathercode'
+      + '&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset'
+      + '&timezone=auto&forecast_days=7';
+    const wxResp = await fetch(url);
+    const wx = await wxResp.json();
+
+    // Current weather
+    const curTemp = Math.round(wx.current.temperature_2m);
+    const curCode = wx.current.weathercode;
+    const tempEl = document.getElementById('wx-temp');
+    const iconEl = document.getElementById('wx-icon');
+    const descEl = document.getElementById('wx-desc');
+    if (tempEl) tempEl.textContent = curTemp;
+    if (iconEl) iconEl.textContent = WX_ICONS[curCode] || '🌡️';
+    if (descEl) descEl.textContent = WX_CODES[curCode] || '';
+
+    // Sunrise / Sunset today
+    const sunrise = new Date(wx.daily.sunrise[0]).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
+    const sunset  = new Date(wx.daily.sunset[0]).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
+    const sunEl = document.getElementById('wx-sun');
+    if (sunEl) sunEl.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg> ' + sunrise + ' &nbsp; <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg> ' + sunset;
+
+    // 7-day forecast
+    const weekEl = document.getElementById('wx-week');
+    if (weekEl) {
+      weekEl.innerHTML = wx.daily.time.map((dateStr, i) => {
+        const d = new Date(dateStr + 'T12:00:00');
+        const name = i === 0 ? 'Heute' : DAY_NAMES[d.getDay()];
+        const icon = WX_ICONS[wx.daily.weathercode[i]] || '🌡️';
+        const hi = Math.round(wx.daily.temperature_2m_max[i]);
+        const lo = Math.round(wx.daily.temperature_2m_min[i]);
+        return '<div class="wx-day' + (i===0?' today':'') + '">'
+          + '<div class="wx-day-name">' + name + '</div>'
+          + '<div class="wx-day-icon">' + icon + '</div>'
+          + '<div class="wx-day-hi">' + hi + '°</div>'
+          + '<div class="wx-day-lo">' + lo + '°</div>'
+          + '</div>';
+      }).join('');
+    }
+  } catch(e) { wxError('Fehler'); console.warn('Weather error:', e); }
+}
+
+function wxError(msg) {
+  const locEl = document.getElementById('wx-location');
+  if (locEl) locEl.textContent = msg;
+  const iconEl = document.getElementById('wx-icon');
+  if (iconEl) iconEl.textContent = '🌡️';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SEKTION: APP-INITIALISIERUNG
+// Zweck:   Startreihenfolge: loadData() → Migration → UI → startLiveSync().
+//          loadData() = localStorage sofort + Firebase bis 5s.
+//          Migration: versucht alte Formate (marcela_app_v1, marcela_v2).
+//          loadWeather() + loadHoroscope() starten parallel nach UI-Init.
+//          iOS PWA Banner: erscheint nach 3s in Safari (einmalig).
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function init() {
+  if (!window.marcelaTestEnvironment?.ready()) {
+    window.marcelaTestEnvironment?.explain();
+    return;
+  }
+  const signedInUser = await window.marcelaAuth.ensureUser();
+  LS_KEY = 'marcela_test_v1_' + PROJECT_ID + '_' + signedInUser.uid;
+  // No Firebase SDK needed — using REST API directly
+
+  // Load data
+  await loadData();
+
+  // Hide loading
+  document.getElementById('loading').style.display = 'none';
+
+  refreshStats();
+  refreshTimers();
+  startLiveSync();
+  showView('splash');
+  loadWeather(); // Load weather on startup
+  loadHoroscope(); // Load horoscope on startup
+
+  // iOS banner
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isSafari = /safari/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  if (isIOS && isSafari && !isStandalone && !localStorage.getItem('banner_dismissed')) {
+    setTimeout(() => { document.getElementById('install-banner').style.display = 'block'; }, 3000);
+  }
+}
+
+/*
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        FUTURE EXTENSIONS GUIDE                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  WIE MAN NEUE ÜBUNGSMODI HINZUFÜGT:
+  ────────────────────────────────────
+  1. HTML: <div class="mode-card" onclick="startPractice('meinModus')"> in #mode-select
+  2. startModeSelect(): dis('mein-modus', bedingung) hinzufügen
+  3. startPractice(): else if (mode === 'meinModus') { items befüllen }
+  4. renderCard(): else if (_pMode === 'meinModus') renderMeinModus(item, c);
+  5. Render-Funktion schreiben (Muster: renderFlashcard, renderTyping)
+  6. Timer läuft automatisch – startPractice ruft startTimer()
+  7. trackWeakItem() in showFeedback wird automatisch aufgerufen
+
+  WIE MAN NEUE VIEWS HINZUFÜGT:
+  ──────────────────────────────
+  1. <div class="view" id="meine-view"> ins HTML einfügen (vor dem Haupt-Script)
+  2. showView('meine-view') aufrufen
+  3. Zurück: showView('...') oder spezifische Funktion
+
+  WIE MAN NEUE ADMIN-FELDER HINZUFÜGT:
+  ──────────────────────────────────────
+  1. Formular-HTML in chapter-detail (richtigen Tab wählen)
+  2. Funktion: addMeinFeld() → getCh().meinArray.push({id:uid(),...})
+  3. save(_cache) aufrufen
+  4. render-Funktion für die Liste
+  5. Beim Laden normalisieren: cloudLoad() und loadData() um meinArray:[] ergänzen
+
+  WIE MAN DAS DESIGN ERWEITERT:
+  ──────────────────────────────
+  • Neue Farben: CSS-Variable in :root hinzufügen
+  • border-radius: IMMER 14px (Regel: kein Stilbruch!)
+  • Cards: Glassmorphism-Muster: background rgba(255,255,255,.90),
+    box-shadow: 0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08)
+    backdrop-filter: blur(8px)
+  • Icons: Lucide SVG-Stil, 1.5px stroke, stroke-linecap/linejoin round
+  • Keine Emojis in onclick! Immer data-Attribute.
+
+  WIE MAN FIREBASE ERWEITERT:
+  ─────────────────────────────
+  • Neue Collection: eigene fbRead/fbWrite-Aufrufe mit neuem doc-Pfad
+  • App-Dokumente:   FB_URL + doc (app/data, app/stats)
+
+  BEKANNTE EINSCHRÄNKUNGEN / TECHNISCHE SCHULDEN:
+  ─────────────────────────────────────────────────
+  • OpenAI-Schlüssel ausschließlich im Backend; Firebase-Konfiguration ist öffentlich
+  • Kein TypeScript → bei Erweiterungen auf Typensicherheit achten
+  • Kein Test-Framework → manuelles Testen nach jeder Änderung
+  • Firebase-Sync: Last-Write-Wins → bei gleichzeitiger Nutzung auf 2 Geräten
+    können Daten überschrieben werden (akzeptabel für 1-2 Nutzer)
+  • Horoskop: täglich neu generiert, nicht gecacht über Tage hinaus
+
+*/
+
+// Start when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+</script>
+<script>
+/* ─────────────────────────────────────────────────────────────
+   PATCH: Splash-Kacheln stabilisieren
+   - Datum immer lokal rendern
+   - Wetter mit robustem Fallback laden
+   - Sternzeichen-Kachel durch letzte Prüfungs-Simulation ersetzen
+   - kein Umbau der bestehenden Architektur
+───────────────────────────────────────────────────────────── */
+
+function examDurationShortLocal(ms) {
+  const total = Math.max(0, Math.round((Number(ms) || 0) / 1000));
+  const min = Math.floor(total / 60);
+  const sec = total % 60;
+  if (min <= 0) return sec + 's';
+  return min + ':' + String(sec).padStart(2, '0') + ' min';
+}
+
+function renderDateCardSafe() {
+  try {
+    const now = new Date();
+    const dayEl = document.getElementById('date-day');
+    const monthEl = document.getElementById('date-month');
+    const weekdayEl = document.getElementById('date-weekday');
+    if (dayEl) dayEl.textContent = String(now.getDate());
+    if (monthEl) monthEl.textContent = now.toLocaleDateString('de-DE', { month:'short' }).replace('.', '').toUpperCase();
+    if (weekdayEl) weekdayEl.textContent = now.toLocaleDateString('de-DE', { weekday:'long' });
+  } catch(e) { console.warn('Datum konnte nicht gerendert werden:', e); }
+}
+
+function renderWeatherFallback(msg) {
+  const loc = document.getElementById('wx-location');
+  const icon = document.getElementById('wx-icon');
+  const temp = document.getElementById('wx-temp');
+  const desc = document.getElementById('wx-desc');
+  const sun = document.getElementById('wx-sun');
+  const week = document.getElementById('wx-week');
+  if (loc) loc.textContent = msg || 'Wetter momentan nicht verfügbar';
+  if (icon) icon.textContent = '🌡️';
+  if (temp) temp.textContent = '--';
+  if (desc) desc.textContent = '';
+  if (sun) sun.textContent = '';
+  if (week) week.innerHTML = '';
+}
+
+function weatherCodeIconSafe(code) {
+  return (typeof WX_ICONS !== 'undefined' && WX_ICONS && WX_ICONS[code]) ? WX_ICONS[code] : '🌡️';
+}
+
+function weatherCodeTextSafe(code) {
+  return (typeof WX_CODES !== 'undefined' && WX_CODES && WX_CODES[code]) ? WX_CODES[code] : '';
+}
+
+function dayNameShortSafe(day) {
+  if (typeof DAY_NAMES !== 'undefined' && DAY_NAMES && DAY_NAMES[day]) return DAY_NAMES[day];
+  return ['So','Mo','Di','Mi','Do','Fr','Sa'][day] || '';
+}
+
+window.loadWeatherByCoords = async function loadWeatherByCoordsPatched(lat, lon, city) {
+  try {
+    const locEl = document.getElementById('wx-location');
+    if (locEl) locEl.textContent = city || 'St. Pölten';
+
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lon)
+      + '&current=temperature_2m,weather_code,weathercode'
+      + '&daily=weather_code,weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset'
+      + '&timezone=auto&forecast_days=7';
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Weather HTTP ' + resp.status);
+    const wx = await resp.json();
+
+    const cur = wx.current || wx.current_weather || {};
+    const curTemp = Math.round(Number(cur.temperature_2m ?? cur.temperature));
+    const curCode = cur.weather_code ?? cur.weathercode;
+
+    const tempEl = document.getElementById('wx-temp');
+    const iconEl = document.getElementById('wx-icon');
+    const descEl = document.getElementById('wx-desc');
+    if (tempEl) tempEl.textContent = Number.isFinite(curTemp) ? String(curTemp) : '--';
+    if (iconEl) iconEl.textContent = weatherCodeIconSafe(curCode);
+    if (descEl) descEl.textContent = weatherCodeTextSafe(curCode);
+
+    const sunEl = document.getElementById('wx-sun');
+    if (sunEl && wx.daily && wx.daily.sunrise && wx.daily.sunset) {
+      const sunrise = new Date(wx.daily.sunrise[0]).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
+      const sunset = new Date(wx.daily.sunset[0]).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
+      sunEl.textContent = '☀ ' + sunrise + '  🌙 ' + sunset;
+    }
+
+    const weekEl = document.getElementById('wx-week');
+    if (weekEl && wx.daily && wx.daily.time) {
+      const codes = wx.daily.weather_code || wx.daily.weathercode || [];
+      weekEl.innerHTML = wx.daily.time.map((dateStr, i) => {
+        const d = new Date(dateStr + 'T12:00:00');
+        const name = i === 0 ? 'Heute' : dayNameShortSafe(d.getDay());
+        const icon = weatherCodeIconSafe(codes[i]);
+        const hi = Math.round(Number(wx.daily.temperature_2m_max[i]));
+        const lo = Math.round(Number(wx.daily.temperature_2m_min[i]));
+        return '<div class="wx-day' + (i===0?' today':'') + '">'
+          + '<div class="wx-day-name">' + name + '</div>'
+          + '<div class="wx-day-icon">' + icon + '</div>'
+          + '<div class="wx-day-hi">' + (Number.isFinite(hi)?hi:'--') + '°</div>'
+          + '<div class="wx-day-lo">' + (Number.isFinite(lo)?lo:'--') + '°</div>'
+          + '</div>';
+      }).join('');
+    }
+  } catch(e) {
+    console.warn('Weather error:', e);
+    renderWeatherFallback('Wetter konnte nicht geladen werden');
+  }
+};
+
+window.loadWeather = function loadWeatherPatched() {
+  renderDateCardSafe();
+  const fallback = () => window.loadWeatherByCoords(48.2049, 15.6256, 'St. Pölten');
+  try {
+    if (!navigator.geolocation) return fallback();
+    navigator.geolocation.getCurrentPosition(
+      pos => window.loadWeatherByCoords(pos.coords.latitude.toFixed(4), pos.coords.longitude.toFixed(4), 'Aktueller Standort'),
+      fallback,
+      { enableHighAccuracy:false, timeout:3500, maximumAge:1800000 }
+    );
+  } catch(e) { fallback(); }
+};
+
+
+/* FIX: Wetter-Anzeige absichern, ohne Layout oder Wetter-Design zu verändern. */
+setTimeout(function(){
+  try {
+    var t = document.getElementById('wx-temp');
+    var l = document.getElementById('wx-location');
+    if (typeof loadWeather === 'function' && t && (t.textContent === '--' || (l && /Fehler|Wetter konnte/i.test(l.textContent || '')))) {
+      loadWeather();
+    }
+  } catch(e) {}
+}, 2500);
+
+function ensureLastGlobalExamContainer() {
+  const card = document.getElementById('horoscope-card');
+  if (!card) return null;
+  card.removeAttribute('onclick');
+  card.style.cursor = 'default';
+  card.innerHTML = '<div id="last-exam-card" style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px">'
+    + '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'
+    + '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3)">Letzte Prüfung</div>'
+    + '<div id="last-exam-main" style="font-size:15px;font-weight:900;color:var(--ink);line-height:1.1">Noch keine</div>'
+    + '<div id="last-exam-sub" style="font-size:9.5px;font-weight:600;color:var(--ink3);line-height:1.35">Prüfungs-Simulation starten</div>'
+    + '</div>';
+  return card;
+}
+
+function getLastGlobalExamRecordLocal() {
+  const records = _cache && _cache.examRecords ? _cache.examRecords : null;
+  return (records && (records.lastGlobalExam || records.globalExamLast || records.globalExam)) || null;
+}
+
+function renderLastGlobalExamOnSplash() {
+  ensureLastGlobalExamContainer();
+  const main = document.getElementById('last-exam-main');
+  const sub = document.getElementById('last-exam-sub');
+  if (!main || !sub) return;
+  const rec = getLastGlobalExamRecordLocal();
+  if (!rec) {
+    main.textContent = 'Noch keine';
+    sub.textContent = 'Noch keine Prüfungs-Simulation';
+    return;
+  }
+  main.textContent = String(rec.score || 0) + '/' + String(rec.total || '?') + ' Punkte';
+  sub.textContent = 'Zeit: ' + examDurationShortLocal(rec.durationMs) + (rec.ts ? ' · ' + new Date(rec.ts).toLocaleDateString('de-DE') : '');
+}
+
+function saveLastGlobalExamForSplash(score, total, durationMs) {
+  if (!_cache.examRecords || typeof _cache.examRecords !== 'object') _cache.examRecords = {};
+  _cache.examRecords.lastGlobalExam = { score: score, total: total, durationMs: durationMs, ts: Date.now() };
+  if (typeof save === 'function') save(_cache);
+  renderLastGlobalExamOnSplash();
+}
+
+window.toggleHoroscope = function(){ renderLastGlobalExamOnSplash(); };
+window.loadHoroscope = function(){ renderLastGlobalExamOnSplash(); };
+
+const __prevShowLessonCheckResultForSplashExam = window.showLessonCheckResult;
+window.showLessonCheckResult = function showLessonCheckResultSplashExamPatched() {
+  if (typeof _globalLessonCheckActive !== 'undefined' && _globalLessonCheckActive) {
+    saveLastGlobalExamForSplash(_lessonCheckScore, _lessonCheckTotal || (_pQ ? _pQ.length : 0), Date.now() - _lessonCheckStartMs);
+  }
+  return __prevShowLessonCheckResultForSplashExam.apply(this, arguments);
+};
+
+document.addEventListener('DOMContentLoaded', function(){
+  renderDateCardSafe();
+  renderLastGlobalExamOnSplash();
+  setTimeout(function(){ if (typeof window.loadWeather === 'function') window.loadWeather(); }, 0);
+});
+</script>
+<script>
+/* ─────────────────────────────────────────────────────────────
+   PATCH: Lektionsüberprüfung
+   Zweck: Gemischter Test aus allen vorhandenen Übungsarten.
+   Minimal integriert: nutzt bestehende Render- und Check-Funktionen.
+───────────────────────────────────────────────────────────── */
+let _lessonCheckActive = false;
+let _lessonCheckStartMs = 0;
+let _lessonCheckTotal = 0;
+let _lessonCheckScore = 0;
+
+function lessonCheckShuffle(arr) {
+  return (arr || []).slice().sort(() => Math.random() - 0.5);
+}
+
+function lessonCheckTake(arr, n) {
+  arr = arr || [];
+  if (!arr.length) return [];
+  const shuffled = lessonCheckShuffle(arr);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    out.push({ ...shuffled[i % shuffled.length] });
+  }
+  return lessonCheckShuffle(out);
+}
+
+function lessonCheckBuildClockItems(n) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    out.push({ ptype:'clock', _lcMode:'clock', hours:Math.floor(Math.random()*24), minutes:Math.floor(Math.random()*60) });
+  }
+  return out;
+}
+
+function lessonCheckItemsForChapter(ch) {
+  const vocab = (ch.vocab || []).map(v => ({ ptype:'vocab', _lcMode:'flashcard', ...v, _dir:'cz-de' }));
+  const mc = (ch.vocab || []).map(v => ({ ptype:'vocab', _lcMode:'mc', ...v, _dir:'cz-de' }));
+  const sentenceTyping = (ch.sentences || []).map(s => ({ ptype:'sentence', _lcMode:'sentences', ...s, _dir:'cz-de' }));
+  const order = (ch.lessons || []).filter(l => l.type === 'order').map(l => ({ ptype:'order', _lcMode:'order', ...l }));
+  const sentorder = (ch.lessons || []).filter(l => l.type === 'sentence-order').map(l => ({ ptype:'sentorder', _lcMode:'sentorder', ...l }));
+  const fill = (ch.lessons || []).filter(l => l.type === 'fill').map(l => ({ ptype:'fill', _lcMode:'fill', ...l }));
+  const writing = [
+    ...(ch.vocab || []).map(v => ({ ptype:'vocab', _lcMode:'typing', ...v, _dir:'cz-de' })),
+    ...(ch.sentences || []).map(s => ({ ptype:'sentence', _lcMode:'typing', ...s, _dir:'cz-de' }))
+  ];
+  const qa = (ch.lessons || []).filter(l => l.type === 'qa').map(l => ({ ptype:'qa', _lcMode:'qa', ...l }));
+
+  return [
+    ...lessonCheckTake(vocab, 8),
+    ...lessonCheckTake(mc, 8),
+    ...lessonCheckTake(sentenceTyping, 8),
+    ...lessonCheckTake(order, 8),
+    ...lessonCheckTake(sentorder, 8),
+    ...lessonCheckTake(fill, 8),
+    ...lessonCheckTake(writing, 8),
+    ...lessonCheckTake(qa, 8),
+    ...lessonCheckBuildClockItems(8)
+  ];
+}
+
+function startLessonCheck() {
+  const ch = getCh();
+  if (!ch) return;
+  const items = lessonCheckShuffle(lessonCheckItemsForChapter(ch));
+  if (!items.length) { showToast('Keine Inhalte für die Lektionsüberprüfung!', 'err'); return; }
+
+  _lessonCheckActive = true;
+  _lessonCheckStartMs = Date.now();
+  _lessonCheckScore = 0;
+  _lessonCheckTotal = items.length;
+
+  _pQ = items;
+  _pI = 0;
+  _pScore = 0;
+  _pMode = 'lessoncheck';
+  _pFlipped = false;
+  _pAllItems = items.slice();
+  _pChunkStart = 0;
+  _pTotalScore = 0;
+  _pTotalCards = 0;
+  _pRound = 1;
+
+  const lbl = document.getElementById('p-mode-lbl');
+  if (lbl) setPracticeModeTitle('Lektionsüberprüfung · gemischter Test', practiceModeCzLabel('lessoncheck'));
+  startTimer();
+  showView('practice');
+  refreshTimers();
+  renderCard();
+}
+
+function lessonCheckLabel(item) {
+  const m = item && item._lcMode;
+  return ({
+    flashcard:'Karteikarte', mc:'Multiple Choice', sentences:'Sätze',
+    order:'Satzbau', sentorder:'Satz-Reihenfolge', fill:'Lückentext',
+    typing:'Schreiben', qa:'Frage-Antwort', clock:'Uhrzeit'
+  })[m] || 'Lektionsüberprüfung';
+}
+
+function lessonCheckCzLabel(item) {
+  return practiceModeCzLabel(item && item._lcMode) || practiceModeCzLabel('lessoncheck');
+}
+
+function renderLessonCheckItem(item, c) {
+  const oldMode = _pMode;
+  _pMode = item._lcMode || 'typing';
+  const lbl = document.getElementById('p-mode-lbl');
+  if (lbl) setPracticeModeTitle('Lektionsüberprüfung · ' + lessonCheckLabel(item), lessonCheckCzLabel(item));
+
+  if (item._lcMode === 'flashcard') renderFlashcard(item, c);
+  else if (item._lcMode === 'mc') renderMC(item, c);
+  else if (item._lcMode === 'sentences') renderTyping(item, c);
+  else if (item._lcMode === 'order') renderOrder(item, c);
+  else if (item._lcMode === 'sentorder') renderSentOrder(item, c);
+  else if (item._lcMode === 'fill') renderFill(item, c);
+  else if (item._lcMode === 'typing') renderTyping(item, c);
+  else if (item._lcMode === 'qa') renderQA(item, c);
+  else if (item._lcMode === 'clock') renderClock(item, c);
+  else renderTyping(item, c);
+
+  _pMode = oldMode;
+}
+
+function fmtLessonCheckDuration(ms) {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const min = Math.floor(total / 60);
+  const sec = total % 60;
+  if (min <= 0) return sec + ' Sekunden';
+  return min + ' Minuten' + (sec ? ' ' + sec + ' Sekunden' : '');
+}
+
+function showLessonCheckResult() {
+  stopTimer();
+  _lessonCheckActive = false;
+  const duration = fmtLessonCheckDuration(Date.now() - _lessonCheckStartMs);
+  const score = _lessonCheckScore;
+  const total = _lessonCheckTotal || _pQ.length || 0;
+  const pct = total ? Math.round(score / total * 100) : 0;
+  const col = pct >= 80 ? '#34C759' : pct >= 50 ? '#FF9500' : '#FF3B30';
+  const c2 = Math.PI * 2 * 54;
+  const off = c2 * (1 - pct / 100);
+  const trophySVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
+  const pContent = document.getElementById('p-content');
+  if (!pContent) return;
+  pContent.innerHTML =
+    '<div class="result-wrap">'
+    + '<div class="r-emoji" style="display:flex;justify-content:center;margin-bottom:8px">' + trophySVG + '</div>'
+    + '<div class="r-title">Gratulation!</div>'
+    + '<div class="r-sub">Du hast ' + score + ' Punkte erreicht und dafür ' + duration + ' gebraucht.</div>'
+    + '<div class="r-ring"><svg width="130" height="130" viewBox="0 0 130 130">'
+    + '<circle cx="65" cy="65" r="54" fill="none" stroke="#E5E5EA" stroke-width="10" transform="rotate(-90 65 65)"/>'
+    + '<circle cx="65" cy="65" r="54" fill="none" stroke="' + col + '" stroke-width="10" stroke-linecap="round" stroke-dasharray="' + c2.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '" transform="rotate(-90 65 65)" style="transition:stroke-dashoffset 1s ease"/>'
+    + '</svg><div class="r-ring-txt"><div class="r-pct" style="color:' + col + '">' + pct + '%</div><div class="r-frac">' + score + '/' + total + '</div></div></div>'
+    + '<div class="r-btns">'
+    + '<button class="r-btn1" onclick="startLessonCheck()">Lektionsüberprüfung nochmal</button>'
+    + '<button class="r-btn2" onclick="startModeSelect()">Anderen Modus</button>'
+    + '<button class="r-btn2" onclick="showView(\'splash\')">Zur Startseite</button>'
+    + '</div></div>';
+  const pf = document.getElementById('p-fill');
+  const pc = document.getElementById('p-count');
+  if (pf) pf.style.width = '100%';
+  if (pc) pc.textContent = total + ' / ' + total;
+}
+
+const __origRenderCardLessonCheck = window.renderCard;
+window.renderCard = function renderCardLessonCheckPatched() {
+  if (_pMode !== 'lessoncheck') return __origRenderCardLessonCheck();
+  const pf = document.getElementById('p-fill');
+  const pc = document.getElementById('p-count');
+  const pct = _pQ.length ? _pI / _pQ.length * 100 : 0;
+  if (pf) pf.style.width = pct + '%';
+  if (pc) pc.textContent = _pI + ' / ' + _pQ.length;
+  if (_pI >= _pQ.length) { showLessonCheckResult(); return; }
+  const c = document.getElementById('p-content');
+  if (!c) return;
+  c.innerHTML = '';
+  renderLessonCheckItem(_pQ[_pI], c);
+};
+
+const __origShowFeedbackLessonCheck = window.showFeedback;
+window.showFeedback = function showFeedbackLessonCheckPatched(ok, answer) {
+  if (_pMode !== 'lessoncheck') return __origShowFeedbackLessonCheck(ok, answer);
+  if (ok) _lessonCheckScore++;
+  return __origShowFeedbackLessonCheck(ok, answer);
+};
+
+const __origNextCardLessonCheck = window.nextCard;
+window.nextCard = function nextCardLessonCheckPatched() {
+  if (_pMode !== 'lessoncheck') return __origNextCardLessonCheck();
+  const ov = document.getElementById('fb-overlay');
+  if (ov) ov.classList.remove('show');
+  _fillChosen = '';
+  _pI++;
+  renderCard();
+};
+
+const __origFcResultLessonCheck = window.fcResult;
+window.fcResult = function fcResultLessonCheckPatched(ok) {
+  if (_pMode !== 'lessoncheck') return __origFcResultLessonCheck(ok);
+  if (ok) { _pScore++; _lessonCheckScore++; }
+  _pI++;
+  renderCard();
+};
+
+function ensureLessonCheckCard() {
+  if (document.getElementById('mode-lessoncheck')) return;
+  const grid = document.querySelector('#mode-select .mode-grid');
+  const weak = document.getElementById('mode-weak');
+  if (!grid) return;
+  const div = document.createElement('div');
+  div.className = 'mode-card';
+  div.id = 'mode-lessoncheck';
+  div.onclick = startLessonCheck;
+  div.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="mode-name">Lektionsüberprüfung</div><div class="mode-desc" id="lessoncheck-record">Noch kein Rekord<span class="cz">Smíšený test lekce</span></div><div class="mode-bar" style="background:#1A1714"></div>';
+  grid.insertBefore(div, weak || null);
+}
+
+const __origStartModeSelectLessonCheck = window.startModeSelect;
+window.startModeSelect = function startModeSelectLessonCheckPatched() {
+  const r = __origStartModeSelectLessonCheck.apply(this, arguments);
+  ensureLessonCheckCard();
+  const ch = getCh();
+  const el = document.getElementById('mode-lessoncheck');
+  if (el && ch) {
+    const hasAny = (ch.vocab||[]).length || (ch.sentences||[]).length || (ch.lessons||[]).some(l => ['order','sentence-order','fill','qa'].includes(l.type));
+    el.classList.toggle('disabled', !hasAny);
+  }
+  return r;
+};
+
+document.addEventListener('DOMContentLoaded', ensureLessonCheckCard);
+
+
+
+/* ─────────────────────────────────────────────────────────────
+   PATCH: Globale Prüfungs-Simulation auf der Kapitel-Hauptseite
+   Zweck: Lektionsüberprüfung über alle verfügbaren Kapitel hinweg.
+   Minimal integriert: nutzt die bestehende lessoncheck-Practice-Engine.
+───────────────────────────────────────────────────────────── */
+let _globalLessonCheckActive = false;
+
+function lessonCheckItemsForAllChapters() {
+  const chapters = _cache.chapters || [];
+  const all = [];
+  chapters.forEach(ch => {
+    const part = lessonCheckItemsForChapter(ch).map(item => ({
+      ...item,
+      _chapterId: ch.id,
+      _chapterName: ch.name || 'Kapitel'
+    }));
+    all.push(...part);
+  });
+  return lessonCheckShuffle(all);
+}
+
+function hasLessonCheckContentInChapters() {
+  return (_cache.chapters || []).some(ch =>
+    (ch.vocab || []).length ||
+    (ch.sentences || []).length ||
+    (ch.lessons || []).some(l => ['order','sentence-order','fill','qa'].includes(l.type))
+  );
+}
+
+function startGlobalLessonCheck() {
+  const chapters = _cache.chapters || [];
+  if (!chapters.length) { showToast('Noch keine Kapitel vorhanden!', 'err'); return; }
+
+  const items = lessonCheckItemsForAllChapters();
+  if (!items.length) { showToast('Keine Inhalte für die Prüfungs-Simulation!', 'err'); return; }
+
+  _globalLessonCheckActive = true;
+  _lessonCheckActive = true;
+  _lessonCheckStartMs = Date.now();
+  _lessonCheckScore = 0;
+  _lessonCheckTotal = items.length;
+
+  _pQ = items;
+  _pI = 0;
+  _pScore = 0;
+  _pMode = 'lessoncheck';
+  _pFlipped = false;
+  _pAllItems = items.slice();
+  _pChunkStart = 0;
+  _pTotalScore = 0;
+  _pTotalCards = 0;
+  _pRound = 1;
+
+  const lbl = document.getElementById('p-mode-lbl');
+  if (lbl) setPracticeModeTitle('Prüfungs-Simulation · alle Kapitel', practiceModeCzLabel('globalcheck'));
+  startTimer();
+  showView('practice');
+  refreshTimers();
+  renderCard();
+}
+
+function renderGlobalExamCardHtml() {
+  const chapters = _cache.chapters || [];
+  const hasAny = hasLessonCheckContentInChapters();
+  const count = chapters.length;
+  const desc = count === 1
+    ? 'Prüfung aus 1 Kapitel'
+    : 'Prüfung aus ' + count + ' Kapiteln';
+  return '<div class="bento-card wide" id="global-exam-card" style="background:#F5EBE4;border:1px solid rgba(196,123,90,.22);' + (!hasAny ? 'opacity:.45;pointer-events:none;' : '') + '" onclick="startGlobalLessonCheck()">'
+    + '<div class="bento-ico-wrap" style="color:var(--ink)">'
+    + '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'
+    + '</div>'
+    + '<div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div>'
+    + '<div class="bento-meta">' + (hasAny ? desc + ' · alle Inhalte gemischt' : 'Noch keine prüfbaren Inhalte') + '</div>'
+    + '<div class="bento-meta" style="margin-top:2px;color:var(--ink3)">Zkušební simulace ze všech kapitol</div>'
+    + '<div class="bento-meta" id="global-exam-record" style="margin-top:3px;font-weight:800">' + globalExamRecordText() + '</div>'
+    + (hasAny ? '<button class="bento-btn" style="background:var(--ink)" onclick="event.stopPropagation();startGlobalLessonCheck()">Prüfung starten</button>' : '')
+    + '</div></div>';
+}
+
+const __origRenderLearnListGlobalExam = window.renderLearnList;
+window.renderLearnList = function renderLearnListGlobalExamPatched() {
+  __origRenderLearnListGlobalExam.apply(this, arguments);
+  const container = document.getElementById('learn-ch-list');
+  if (!container) return;
+  const chapters = _cache.chapters || [];
+  if (!chapters.length) return;
+  container.className = 'bento-grid';
+  if (!document.getElementById('global-exam-card')) {
+    container.insertAdjacentHTML('afterbegin', renderGlobalExamCardHtml());
+  }
+};
+
+const __prevShowLessonCheckResultGlobalExam = window.showLessonCheckResult;
+window.showLessonCheckResult = function showLessonCheckResultGlobalExamPatched() {
+  if (!_globalLessonCheckActive) return __prevShowLessonCheckResultGlobalExam.apply(this, arguments);
+
+  stopTimer();
+  _lessonCheckActive = false;
+  const duration = fmtLessonCheckDuration(Date.now() - _lessonCheckStartMs);
+  const score = _lessonCheckScore;
+  const total = _lessonCheckTotal || _pQ.length || 0;
+  const pct = total ? Math.round(score / total * 100) : 0;
+  const col = pct >= 80 ? '#34C759' : pct >= 50 ? '#FF9500' : '#FF3B30';
+  const c2 = Math.PI * 2 * 54;
+  const off = c2 * (1 - pct / 100);
+  const trophySVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
+  const pContent = document.getElementById('p-content');
+  if (!pContent) return;
+  pContent.innerHTML =
+    '<div class="result-wrap">'
+    + '<div class="r-emoji" style="display:flex;justify-content:center;margin-bottom:8px">' + trophySVG + '</div>'
+    + '<div class="r-title">Gratulation!</div>'
+    + '<div class="r-sub">Du hast ' + score + ' Punkte erreicht und dafür ' + duration + ' gebraucht.</div>'
+    + '<div class="r-ring"><svg width="130" height="130" viewBox="0 0 130 130">'
+    + '<circle cx="65" cy="65" r="54" fill="none" stroke="#E5E5EA" stroke-width="10" transform="rotate(-90 65 65)"/>'
+    + '<circle cx="65" cy="65" r="54" fill="none" stroke="' + col + '" stroke-width="10" stroke-linecap="round" stroke-dasharray="' + c2.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '" transform="rotate(-90 65 65)" style="transition:stroke-dashoffset 1s ease"/>'
+    + '</svg><div class="r-ring-txt"><div class="r-pct" style="color:' + col + '">' + pct + '%</div><div class="r-frac">' + score + '/' + total + '</div></div></div>'
+    + '<div class="r-btns">'
+    + '<button class="r-btn1" onclick="startGlobalLessonCheck()">Prüfungs-Simulation nochmal</button>'
+    + '<button class="r-btn2" onclick="showView(\'learn-home\')">Zur Kapitelübersicht</button>'
+    + '<button class="r-btn2" onclick="showView(\'splash\')">Zur Startseite</button>'
+    + '</div></div>';
+  const pf = document.getElementById('p-fill');
+  const pc = document.getElementById('p-count');
+  if (pf) pf.style.width = '100%';
+  if (pc) pc.textContent = total + ' / ' + total;
+  _globalLessonCheckActive = false;
+};
+
+const __prevExitPracticeGlobalExam = window.exitPractice;
+window.exitPractice = function exitPracticeGlobalExamPatched() {
+  if (_globalLessonCheckActive) {
+    _globalLessonCheckActive = false;
+    stopTimer();
+    showView('learn-home');
+    return;
+  }
+  return __prevExitPracticeGlobalExam.apply(this, arguments);
+};
+
+/* ─────────────────────────────────────────────────────────────
+   PATCH: Rekordpunkte + Bestzeit für Prüfungen
+   - Lektionsüberprüfung: Rekord pro Kapitel
+   - Prüfungs-Simulation: globaler Rekord über alle Kapitel
+   - Neuer Rekord bei mehr Punkten oder gleicher/mehr Punktzahl in schnellerer Zeit
+───────────────────────────────────────────────────────────── */
+function ensureExamRecords() {
+  if (!_cache.examRecords || typeof _cache.examRecords !== 'object') _cache.examRecords = {};
+  if (!_cache.examRecords.lessonChecks || typeof _cache.examRecords.lessonChecks !== 'object') _cache.examRecords.lessonChecks = {};
+  if (!_cache.examRecords.globalExam || typeof _cache.examRecords.globalExam !== 'object') _cache.examRecords.globalExam = null;
+  return _cache.examRecords;
+}
+
+function examRecordKeyForCurrentChapter() {
+  const ch = getCh && getCh();
+  return ch && ch.id ? ch.id : 'unknown';
+}
+
+function examRecordDurationShort(ms) {
+  if (!ms && ms !== 0) return '—';
+  const total = Math.max(0, Math.round(ms / 1000));
+  const min = Math.floor(total / 60);
+  const sec = total % 60;
+  if (min <= 0) return sec + 's';
+  return min + ':' + String(sec).padStart(2, '0') + ' min';
+}
+
+function getLessonCheckRecord(chapterId) {
+  const records = ensureExamRecords();
+  return records.lessonChecks[chapterId || examRecordKeyForCurrentChapter()] || null;
+}
+
+function getGlobalExamRecord() {
+  const records = ensureExamRecords();
+  return records.globalExam || null;
+}
+
+function shouldReplaceExamRecord(oldRec, score, total, durationMs) {
+  if (!oldRec) return true;
+  const oldScore = Number(oldRec.score) || 0;
+  const oldTime = Number(oldRec.durationMs) || Infinity;
+  if (score > oldScore) return true;
+  if (score >= oldScore && durationMs < oldTime) return true;
+  return false;
+}
+
+function saveLessonCheckRecord(score, total, durationMs) {
+  const chapterId = examRecordKeyForCurrentChapter();
+  const records = ensureExamRecords();
+  const oldRec = records.lessonChecks[chapterId] || null;
+  const isNew = shouldReplaceExamRecord(oldRec, score, total, durationMs);
+  if (isNew) {
+    records.lessonChecks[chapterId] = { score: score, total: total, durationMs: durationMs, ts: Date.now() };
+    save(_cache);
+    refreshLessonCheckRecordOnButton();
+  }
+  return isNew;
+}
+
+function saveGlobalExamRecord(score, total, durationMs) {
+  const records = ensureExamRecords();
+  const oldRec = records.globalExam || null;
+  const isNew = shouldReplaceExamRecord(oldRec, score, total, durationMs);
+  if (isNew) {
+    records.globalExam = { score: score, total: total, durationMs: durationMs, ts: Date.now() };
+    save(_cache);
+  }
+  return isNew;
+}
+
+function lessonCheckRecordHtml() {
+  const rec = getLessonCheckRecord();
+  if (!rec) return '<div class="mode-desc" id="lessoncheck-record">Noch kein Rekord<span class="cz">Smíšený test lekce</span></div>';
+  return '<div class="mode-desc" id="lessoncheck-record">Rekord: ' + esc(String(rec.score)) + '/' + esc(String(rec.total || '?')) + ' · ' + esc(examRecordDurationShort(rec.durationMs)) + '<span class="cz">Smíšený test lekce</span></div>';
+}
+
+function globalExamRecordText() {
+  const rec = getGlobalExamRecord();
+  if (!rec) return 'Noch kein Rekord';
+  return 'Rekord: ' + rec.score + '/' + (rec.total || '?') + ' · ' + examRecordDurationShort(rec.durationMs);
+}
+
+function refreshLessonCheckRecordOnButton() {
+  const el = document.getElementById('lessoncheck-record');
+  if (!el) return;
+  const rec = getLessonCheckRecord();
+  el.innerHTML = rec ? ('Rekord: ' + rec.score + '/' + (rec.total || '?') + ' · ' + examRecordDurationShort(rec.durationMs) + '<span class="cz">Smíšený test lekce</span>') : 'Noch kein Rekord<span class="cz">Smíšený test lekce</span>';
+}
+
+const __prevEnsureLessonCheckCardRecords = window.ensureLessonCheckCard;
+window.ensureLessonCheckCard = function ensureLessonCheckCardRecordsPatched() {
+  if (typeof __prevEnsureLessonCheckCardRecords === 'function') __prevEnsureLessonCheckCardRecords.apply(this, arguments);
+  const el = document.getElementById('mode-lessoncheck');
+  if (!el) return;
+  const desc = el.querySelector('.mode-desc');
+  if (desc) desc.outerHTML = lessonCheckRecordHtml();
+  else if (!document.getElementById('lessoncheck-record')) {
+    const name = el.querySelector('.mode-name');
+    if (name) name.insertAdjacentHTML('afterend', lessonCheckRecordHtml());
+  }
+};
+
+const __prevStartModeSelectRecords = window.startModeSelect;
+window.startModeSelect = function startModeSelectRecordsPatched() {
+  const r = __prevStartModeSelectRecords.apply(this, arguments);
+  if (typeof window.ensureLessonCheckCard === 'function') window.ensureLessonCheckCard();
+  refreshLessonCheckRecordOnButton();
+  return r;
+};
+
+const __prevRenderGlobalExamCardHtmlRecords = window.renderGlobalExamCardHtml;
+window.renderGlobalExamCardHtml = function renderGlobalExamCardHtmlRecordsPatched() {
+  if (typeof __prevRenderGlobalExamCardHtmlRecords !== 'function') return '';
+  let html = __prevRenderGlobalExamCardHtmlRecords.apply(this, arguments);
+  if (!html.includes('global-exam-record')) {
+    const recText = globalExamRecordText();
+    html = html.replace('alle Inhalte gemischt', 'alle Inhalte gemischt · ' + esc(recText));
+    html = html.replace('Noch keine prüfbaren Inhalte', 'Noch keine prüfbaren Inhalte · ' + esc(recText));
+  }
+  return html;
+};
+
+const __prevRenderLearnListRecords = window.renderLearnList;
+window.renderLearnList = function renderLearnListRecordsPatched() {
+  const r = __prevRenderLearnListRecords.apply(this, arguments);
+  const card = document.getElementById('global-exam-card');
+  if (card) {
+    const meta = card.querySelector('.bento-meta');
+    if (meta && !meta.textContent.includes('Rekord:') && !meta.textContent.includes('Noch kein Rekord')) {
+      meta.textContent = meta.textContent + ' · ' + globalExamRecordText();
+    }
+  }
+  return r;
+};
+
+const __prevShowLessonCheckResultRecords = window.showLessonCheckResult;
+window.showLessonCheckResult = function showLessonCheckResultRecordsPatched() {
+  if (_globalLessonCheckActive) {
+    const score = _lessonCheckScore;
+    const total = _lessonCheckTotal || _pQ.length || 0;
+    const durationMs = Date.now() - _lessonCheckStartMs;
+    const isNew = saveGlobalExamRecord(score, total, durationMs);
+    const r = __prevShowLessonCheckResultRecords.apply(this, arguments);
+    const sub = document.querySelector('#p-content .r-sub');
+    if (sub && isNew) sub.innerHTML += '<br><strong style="color:var(--green)">Neuer Rekord!</strong>';
+    return r;
+  }
+  const score = _lessonCheckScore;
+  const total = _lessonCheckTotal || _pQ.length || 0;
+  const durationMs = Date.now() - _lessonCheckStartMs;
+  const isNew = saveLessonCheckRecord(score, total, durationMs);
+  const r = __prevShowLessonCheckResultRecords.apply(this, arguments);
+  const sub = document.querySelector('#p-content .r-sub');
+  if (sub && isNew) sub.innerHTML += '<br><strong style="color:var(--green)">Neuer Rekord!</strong>';
+  return r;
+};
+
+document.addEventListener('DOMContentLoaded', function(){
+  ensureExamRecords();
+  if (typeof window.ensureLessonCheckCard === 'function') window.ensureLessonCheckCard();
+});
+
+/* ─────────────────────────────────────────────────────────────
+   PATCH: Strikte Lektions-Reihenfolge für Satzbau, Satz-Reihenfolge
+          und Lückentext
+
+   Regel:
+   - Lektion "Standard" darf weiterhin zufällig gemischt werden.
+   - Jede benannte Lektion (!== Standard) wird immer vollständig und
+     in gespeicherter Reihenfolge verwendet.
+   - Das gilt im normalen Üben, in der Lektionsüberprüfung und in der
+     globalen Prüfungs-Simulation.
+   - Keine neue Architektur: nutzt bestehende lesson-Felder, Practice-
+     Engine und LessonCheck-Mechanik.
+───────────────────────────────────────────────────────────── */
+let _strictLessonSequenceActive = false;
+const STRICT_LESSON_PTYPES = ['order', 'sentorder', 'fill'];
+
+function isStandardLessonName(name) {
+  return !name || String(name).trim().toLowerCase() === 'standard';
+}
+
+function isStrictLessonType(ptype) {
+  return STRICT_LESSON_PTYPES.includes(ptype);
+}
+
+function strictLessonKey(item) {
+  return lessonNameOf(item);
+}
+
+function strictBuildSequence(items, options = {}) {
+  const ptype = options.ptype || '';
+  const selectedLesson = options.lessonName || null;
+  const examMode = !!options.examMode;
+  const takeStandard = options.takeStandard || 8;
+  const list = (items || []).map((item, index) => ({ ...item, _strictOriginalIndex: index }));
+
+  if (!isStrictLessonType(ptype)) {
+    return examMode ? lessonCheckTake(list, takeStandard) : lessonCheckShuffle(list);
+  }
+
+  // Einzelne benannte Lektion: niemals mischen, vollständig in Reihenfolge.
+  if (selectedLesson && !isStandardLessonName(selectedLesson)) {
+    return list.filter(item => strictLessonKey(item) === selectedLesson)
+      .sort((a, b) => (a._strictOriginalIndex || 0) - (b._strictOriginalIndex || 0));
+  }
+
+  // Einzelne Standard-Lektion: darf wie bisher zufällig gemischt werden.
+  if (selectedLesson && isStandardLessonName(selectedLesson)) {
+    const standard = list.filter(item => isStandardLessonName(strictLessonKey(item)));
+    return examMode ? lessonCheckTake(standard, takeStandard) : lessonCheckShuffle(standard);
+  }
+
+  // Alle Lektionen: Standard zufällig, benannte Lektionen blockweise vollständig
+  // und innerhalb des Blocks in gespeicherter Reihenfolge.
+  const standard = list.filter(item => isStandardLessonName(strictLessonKey(item)));
+  const namedOrder = [];
+  const namedMap = new Map();
+  list.forEach(item => {
+    const name = strictLessonKey(item);
+    if (isStandardLessonName(name)) return;
+    if (!namedMap.has(name)) {
+      namedMap.set(name, []);
+      namedOrder.push(name);
+    }
+    namedMap.get(name).push(item);
+  });
+
+  const standardPart = examMode ? lessonCheckTake(standard, takeStandard) : lessonCheckShuffle(standard);
+  const namedBlocks = namedOrder.map(name => namedMap.get(name)
+    .sort((a, b) => (a._strictOriginalIndex || 0) - (b._strictOriginalIndex || 0))
+    .map(item => ({ ...item, _strictLessonBlock: name }))
+  );
+
+  // Standard darf zufällig sein; benannte Lektionen bleiben ganze Blöcke.
+  return [standardPart, ...namedBlocks].flat();
+}
+
+function strictItemsForPractice(ch, mode, lessonName) {
+  let items = [];
+  if (mode === 'flashcard' || mode === 'typing') {
+    (ch.vocab||[]).forEach(v => items.push({ ptype: 'vocab', ...v }));
+    (ch.sentences||[]).forEach(s => items.push({ ptype: 'sentence', ...s }));
+  } else if (mode === 'sentences') {
+    (ch.sentences||[]).forEach(s => items.push({ ptype: 'sentence', ...s }));
+    items = filterByLesson(items, lessonName);
+  } else if (mode === 'mc') {
+    (ch.vocab||[]).forEach(v => items.push({ ptype: 'vocab', ...v }));
+  } else if (mode === 'order') {
+    (ch.lessons||[]).filter(l => l.type === 'order').forEach(l => items.push({ ptype: 'order', ...l }));
+    items = strictBuildSequence(items, { ptype:'order', lessonName });
+  } else if (mode === 'sentorder') {
+    (ch.lessons||[]).filter(l => l.type === 'sentence-order').forEach(l => items.push({ ptype: 'sentorder', ...l }));
+    items = strictBuildSequence(items, { ptype:'sentorder', lessonName });
+  } else if (mode === 'fill') {
+    (ch.lessons||[]).filter(l => l.type === 'fill').forEach(l => items.push({ ptype: 'fill', ...l }));
+    items = strictBuildSequence(items, { ptype:'fill', lessonName });
+  } else if (mode === 'qa') {
+    (ch.lessons||[]).filter(l => l.type === 'qa').forEach(l => items.push({ ptype: 'qa', ...l }));
+    items = filterByLesson(items, lessonName);
+  } else if (mode === 'clock') {
+    for (let i = 0; i < 20; i++) items.push({ ptype: 'clock', hours: Math.floor(Math.random() * 24), minutes: Math.floor(Math.random() * 60) });
+  }
+  return items;
+}
+
+// Override startPractice nur dort, wo es logisch hingehört.
+window.startPractice = function startPracticeStrictLessons(mode, lessonName) {
+  const ch = getCh(); if (!ch) return;
+  _activeLessonFilter = lessonName || null;
+  let items = strictItemsForPractice(ch, mode, lessonName);
+
+  if (!items.length) { showToast('Keine Inhalte für diese Lektion!', 'err'); return; }
+
+  items = items.map(item => {
+    if (item.ptype !== 'vocab' && item.ptype !== 'sentence') return item;
+    let d = _dir;
+    if (d === 'mixed') d = Math.random() < 0.5 ? 'cz-de' : 'de-cz';
+    return { ...item, _dir: d };
+  });
+
+  const strictMode = ['order','sentorder','fill'].includes(mode);
+  _strictLessonSequenceActive = strictMode;
+
+  const deck = strictMode ? items.slice() : items.sort(() => Math.random() - 0.5);
+  _pAllItems = deck;
+  _pChunkStart = 0;
+  _pQ = strictMode ? deck.slice() : deck.slice(0, 20);
+  _pI = 0; _pScore = 0; _pMode = mode; _pFlipped = false;
+  _mistakeCount = 0; _motivIdx = 0;
+  _pRound = 1; _pOrigItems = _pQ.slice();
+  _pTotalScore = 0; _pTotalCards = 0;
+
+  const labels = { flashcard: 'Karteikarte', mc: 'Multiple Choice', order: 'Satzbau', sentorder: 'Satz-Reihenfolge', fill: 'Lückentext', typing: 'Schreiben', sentences: 'Sätze', qa: 'Frage-Antwort', clock: 'Uhrzeit' };
+  const dirLabel = _dir === 'cz-de' ? '🇨🇿→🇦🇹' : _dir === 'de-cz' ? '🇦🇹→🇨🇿' : '↔';
+  setPracticeModeTitle((labels[mode] || mode) + (lessonName ? ' · ' + lessonName : ' · alle Lektionen') + ' · ' + dirLabel, practiceModeCzLabel(mode));
+
+  startTimer();
+  showView('practice');
+  refreshTimers();
+  renderCard();
+};
+
+// Bei strikter Reihenfolge am Ende nicht neu mischen, sondern gleiche Reihenfolge wiederholen.
+const __renderCardBeforeStrictLessons = window.renderCard;
+window.renderCard = function renderCardStrictLessonsPatched() {
+  if (_pMode !== 'lessoncheck' && _strictLessonSequenceActive && _pI >= _pQ.length && _pQ.length) {
+    _pTotalScore += _pScore;
+    _pTotalCards += _pQ.length;
+    _pRound++;
+    _pI = 0;
+    _pScore = 0;
+    _pFlipped = false;
+    _pQ = _pAllItems.slice();
+    showToast('Lektion vollständig durch — beginnt wieder von vorne', 'ok');
+  }
+  return __renderCardBeforeStrictLessons.apply(this, arguments);
+};
+
+function lessonCheckBlocksForChapter(ch) {
+  const vocab = (ch.vocab || []).map(v => ({ ptype:'vocab', _lcMode:'flashcard', ...v, _dir:'cz-de' }));
+  const mc = (ch.vocab || []).map(v => ({ ptype:'vocab', _lcMode:'mc', ...v, _dir:'cz-de' }));
+  const sentenceTyping = (ch.sentences || []).map(s => ({ ptype:'sentence', _lcMode:'sentences', ...s, _dir:'cz-de' }));
+  const orderRaw = (ch.lessons || []).filter(l => l.type === 'order').map(l => ({ ptype:'order', _lcMode:'order', ...l }));
+  const sentorderRaw = (ch.lessons || []).filter(l => l.type === 'sentence-order').map(l => ({ ptype:'sentorder', _lcMode:'sentorder', ...l }));
+  const fillRaw = (ch.lessons || []).filter(l => l.type === 'fill').map(l => ({ ptype:'fill', _lcMode:'fill', ...l }));
+  const writing = [
+    ...(ch.vocab || []).map(v => ({ ptype:'vocab', _lcMode:'typing', ...v, _dir:'cz-de' })),
+    ...(ch.sentences || []).map(s => ({ ptype:'sentence', _lcMode:'typing', ...s, _dir:'cz-de' }))
+  ];
+  const qa = (ch.lessons || []).filter(l => l.type === 'qa').map(l => ({ ptype:'qa', _lcMode:'qa', ...l }));
+  const clock = lessonCheckBuildClockItems(8);
+
+  const blocks = [];
+  lessonCheckTake(vocab, 8).forEach(i => blocks.push([i]));
+  lessonCheckTake(mc, 8).forEach(i => blocks.push([i]));
+  lessonCheckTake(sentenceTyping, 8).forEach(i => blocks.push([i]));
+  strictBuildSequence(orderRaw, { ptype:'order', examMode:true, takeStandard:8 }).forEach(i => {
+    if (i._strictLessonBlock) {
+      let last = blocks[blocks.length - 1];
+      if (!last || last._blockName !== 'order:' + i._strictLessonBlock) { last = []; last._blockName = 'order:' + i._strictLessonBlock; blocks.push(last); }
+      last.push(i);
+    } else blocks.push([i]);
+  });
+  strictBuildSequence(sentorderRaw, { ptype:'sentorder', examMode:true, takeStandard:8 }).forEach(i => {
+    if (i._strictLessonBlock) {
+      let last = blocks[blocks.length - 1];
+      if (!last || last._blockName !== 'sentorder:' + i._strictLessonBlock) { last = []; last._blockName = 'sentorder:' + i._strictLessonBlock; blocks.push(last); }
+      last.push(i);
+    } else blocks.push([i]);
+  });
+  strictBuildSequence(fillRaw, { ptype:'fill', examMode:true, takeStandard:8 }).forEach(i => {
+    if (i._strictLessonBlock) {
+      let last = blocks[blocks.length - 1];
+      if (!last || last._blockName !== 'fill:' + i._strictLessonBlock) { last = []; last._blockName = 'fill:' + i._strictLessonBlock; blocks.push(last); }
+      last.push(i);
+    } else blocks.push([i]);
+  });
+  lessonCheckTake(writing, 8).forEach(i => blocks.push([i]));
+  lessonCheckTake(qa, 8).forEach(i => blocks.push([i]));
+  clock.forEach(i => blocks.push([i]));
+  return blocks;
+}
+
+function flattenLessonCheckBlocks(blocks) {
+  return lessonCheckShuffle(blocks || []).flat();
+}
+
+window.lessonCheckItemsForChapter = function lessonCheckItemsForChapterStrict(ch) {
+  return flattenLessonCheckBlocks(lessonCheckBlocksForChapter(ch));
+};
+
+window.startLessonCheck = function startLessonCheckStrictLessons() {
+  const ch = getCh();
+  if (!ch) return;
+  const items = lessonCheckItemsForChapter(ch);
+  if (!items.length) { showToast('Keine Inhalte für die Lektionsüberprüfung!', 'err'); return; }
+
+  _strictLessonSequenceActive = false;
+  _globalLessonCheckActive = false;
+  _lessonCheckActive = true;
+  _lessonCheckStartMs = Date.now();
+  _lessonCheckScore = 0;
+  _lessonCheckTotal = items.length;
+
+  _pQ = items;
+  _pI = 0;
+  _pScore = 0;
+  _pMode = 'lessoncheck';
+  _pFlipped = false;
+  _pAllItems = items.slice();
+  _pChunkStart = 0;
+  _pTotalScore = 0;
+  _pTotalCards = 0;
+  _pRound = 1;
+
+  const lbl = document.getElementById('p-mode-lbl');
+  if (lbl) setPracticeModeTitle('Lektionsüberprüfung · gemischter Test', practiceModeCzLabel('lessoncheck'));
+  startTimer();
+  showView('practice');
+  refreshTimers();
+  renderCard();
+};
+
+window.lessonCheckItemsForAllChapters = function lessonCheckItemsForAllChaptersStrict() {
+  const blocks = [];
+  (_cache.chapters || []).forEach(ch => {
+    lessonCheckBlocksForChapter(ch).forEach(block => {
+      const enriched = block.map(item => ({ ...item, _chapterId: ch.id, _chapterName: ch.name || 'Kapitel' }));
+      enriched._blockName = block._blockName ? (ch.id + ':' + block._blockName) : undefined;
+      blocks.push(enriched);
+    });
+  });
+  return flattenLessonCheckBlocks(blocks);
+};
+
+window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
+  const chapters = _cache.chapters || [];
+  if (!chapters.length) { showToast('Noch keine Kapitel vorhanden!', 'err'); return; }
+
+  const items = lessonCheckItemsForAllChapters();
+  if (!items.length) { showToast('Keine Inhalte für die Prüfungs-Simulation!', 'err'); return; }
+
+  _strictLessonSequenceActive = false;
+  _globalLessonCheckActive = true;
+  _lessonCheckActive = true;
+  _lessonCheckStartMs = Date.now();
+  _lessonCheckScore = 0;
+  _lessonCheckTotal = items.length;
+
+  _pQ = items;
+  _pI = 0;
+  _pScore = 0;
+  _pMode = 'lessoncheck';
+  _pFlipped = false;
+  _pAllItems = items.slice();
+  _pChunkStart = 0;
+  _pTotalScore = 0;
+  _pTotalCards = 0;
+  _pRound = 1;
+
+  const lbl = document.getElementById('p-mode-lbl');
+  if (lbl) setPracticeModeTitle('Prüfungs-Simulation · alle Kapitel', practiceModeCzLabel('globalcheck'));
+  startTimer();
+  showView('practice');
+  refreshTimers();
+  renderCard();
+};
+
+</script>
+
+
+<script>
+/* PATCH: Lektionsauswahl für Karteikarte, Multiple Choice, Sätze, Satzbau,
+   Satz-Reihenfolge, Lückentext, Schreiben und Frage-Antwort. */
+(function(){
+  const LESSON_SELECTABLE_MODES = ['flashcard','mc','sentences','order','sentorder','fill','typing','qa'];
+  function hasFn(name){ return typeof window[name] === 'function'; }
+  function safeEsc(v){ return hasFn('esc') ? esc(v) : String(v ?? ''); }
+  function safeEscJ(v){ return hasFn('escJ') ? escJ(v) : String(v ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+  function lName(item){ return hasFn('lessonNameOf') ? lessonNameOf(item) : ((item && item.lesson) ? String(item.lesson).trim() : 'Standard') || 'Standard'; }
+  function standardName(name){ return !name || String(name).trim().toLowerCase() === 'standard'; }
+  function shuffleCopy(arr){ return (arr || []).slice().sort(() => Math.random() - 0.5); }
+
+  window.lessonModeLabel = function(mode) {
+    return ({flashcard:'Karteikarte',mc:'Multiple Choice',sentences:'Sätze',order:'Satzbau',sentorder:'Satz-Reihenfolge',fill:'Lückentext',typing:'Schreiben',qa:'Frage-Antwortspiel'})[mode] || mode;
+  };
+
+  window.getItemsForLessonMode = function(mode) {
+    const ch = getCh(); if (!ch) return [];
+    if (mode === 'flashcard') return [...(ch.vocab||[]).map(v=>({ptype:'vocab',...v})), ...(ch.sentences||[]).map(s=>({ptype:'sentence',...s}))];
+    if (mode === 'mc') return (ch.vocab||[]).map(v=>({ptype:'vocab',...v}));
+    if (mode === 'sentences') return (ch.sentences||[]).map(s=>({ptype:'sentence',...s}));
+    if (mode === 'order') return (ch.lessons||[]).filter(l=>l.type==='order').map(l=>({ptype:'order',...l}));
+    if (mode === 'sentorder') return (ch.lessons||[]).filter(l=>l.type==='sentence-order').map(l=>({ptype:'sentorder',...l}));
+    if (mode === 'fill') return (ch.lessons||[]).filter(l=>l.type==='fill').map(l=>({ptype:'fill',...l}));
+    if (mode === 'typing') return [...(ch.vocab||[]).map(v=>({ptype:'vocab',...v})), ...(ch.sentences||[]).map(s=>({ptype:'sentence',...s}))];
+    if (mode === 'qa') return (ch.lessons||[]).filter(l=>l.type==='qa').map(l=>({ptype:'qa',...l}));
+    return [];
+  };
+
+  window.getLessonNamesForMode = function(mode) {
+    return Array.from(new Set(getItemsForLessonMode(mode).map(lName))).sort((a,b)=>a.localeCompare(b,'de'));
+  };
+
+  window.openLessonSelect = function(mode) {
+    if (!LESSON_SELECTABLE_MODES.includes(mode)) { startPractice(mode); return; }
+    if (hasFn('ensureLessonSelectView')) ensureLessonSelectView();
+    const title = document.getElementById('lesson-select-title');
+    const list = document.getElementById('lesson-select-list');
+    const items = getItemsForLessonMode(mode);
+    const names = getLessonNamesForMode(mode);
+    if (title) title.textContent = lessonModeLabel(mode) + ' — Lektion wählen';
+    if (!list) return;
+    if (!items.length) {
+      list.innerHTML = '<div class="empty-msg">Keine Inhalte für ' + safeEsc(lessonModeLabel(mode)) + '</div>';
+    } else {
+      list.innerHTML =
+        '<div class="sec-title" style="margin:0 0 10px">Alle gemeinsam</div>'
+        + '<div class="ch-card" onclick="startPractice(\'' + mode + '\', null)">'
+        + '<div class="ch-ico" style="background:var(--terra-lt);color:var(--terra-dk)">∞</div>'
+        + '<div class="ch-body"><div class="ch-name">Alle Lektionen üben</div><div class="ch-meta">' + items.length + ' Einträge aus allen Lektionen</div></div>'
+        + '<div class="ch-arr">›</div></div>'
+        + '<div class="sec-title" style="margin:18px 0 10px">Einzelne Lektionen</div>'
+        + names.map(name => {
+          const count = items.filter(x => lName(x) === name).length;
+          const sub = standardName(name) ? 'Standard · zufällig gemischt' : ((['order','sentorder','fill'].includes(mode)) ? 'vollständig in Reihenfolge' : 'Einträge dieser Lektion');
+          return '<div class="ch-card" onclick="startPractice(\'' + mode + '\', \'' + safeEscJ(name) + '\')">'
+            + '<div class="ch-ico" style="background:var(--cream2);color:var(--terra-dk)">L</div>'
+            + '<div class="ch-body"><div class="ch-name">' + safeEsc(name) + '</div><div class="ch-meta">' + count + ' Einträge · ' + safeEsc(sub) + '</div></div>'
+            + '<div class="ch-arr">›</div></div>';
+        }).join('');
+    }
+    showView('lesson-select');
+  };
+
+  function setCardToLessonSelect(id, mode) {
+    const el = document.getElementById(id); if (!el) return;
+    el.setAttribute('onclick', "openLessonSelect('" + mode + "')");
+  }
+  function ensureSentencesCard() {
+    const grid = document.querySelector('#mode-select .mode-grid');
+    if (!grid || document.getElementById('mode-sentences')) return;
+    const card = document.createElement('div');
+    card.className = 'mode-card'; card.id = 'mode-sentences';
+    card.setAttribute('onclick', "openLessonSelect('sentences')");
+    card.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h6"/></svg></div><div class="mode-name">Sätze</div><div class="mode-desc">Sätze nach Lektion üben<span class="cz">Procvičovat věty podle lekce</span></div><div class="mode-bar" style="background:#5AC8FA"></div>';
+    const order = document.getElementById('mode-order'); grid.insertBefore(card, order || null);
+  }
+  window.patchLessonModeCards = function() {
+    ensureSentencesCard();
+    setCardToLessonSelect('mode-flashcard','flashcard');
+    setCardToLessonSelect('mode-mc','mc');
+    setCardToLessonSelect('mode-sentences','sentences');
+    setCardToLessonSelect('mode-order','order');
+    setCardToLessonSelect('mode-sentorder','sentorder');
+    setCardToLessonSelect('mode-fill','fill');
+    setCardToLessonSelect('mode-typing','typing');
+    setCardToLessonSelect('mode-qa','qa');
+  };
+
+  function strictSequenceForMode(items, ptype, lessonName) {
+    if (hasFn('strictBuildSequence')) return strictBuildSequence(items, { ptype, lessonName });
+    if (lessonName) items = items.filter(item => lName(item) === lessonName);
+    if (lessonName && !standardName(lessonName)) return items;
+    return shuffleCopy(items);
+  }
+  function filteredItems(ch, mode, lessonName) {
+    let items = [];
+    if (mode === 'flashcard' || mode === 'typing') {
+      (ch.vocab||[]).forEach(v=>items.push({ptype:'vocab',...v}));
+      (ch.sentences||[]).forEach(s=>items.push({ptype:'sentence',...s}));
+      if (lessonName) items = items.filter(item=>lName(item)===lessonName);
+    } else if (mode === 'mc') {
+      (ch.vocab||[]).forEach(v=>items.push({ptype:'vocab',...v}));
+      if (lessonName) items = items.filter(item=>lName(item)===lessonName);
+    } else if (mode === 'sentences') {
+      (ch.sentences||[]).forEach(s=>items.push({ptype:'sentence',...s}));
+      if (lessonName) items = items.filter(item=>lName(item)===lessonName);
+    } else if (mode === 'order') {
+      (ch.lessons||[]).filter(l=>l.type==='order').forEach(l=>items.push({ptype:'order',...l}));
+      items = strictSequenceForMode(items,'order',lessonName);
+    } else if (mode === 'sentorder') {
+      (ch.lessons||[]).filter(l=>l.type==='sentence-order').forEach(l=>items.push({ptype:'sentorder',...l}));
+      items = strictSequenceForMode(items,'sentorder',lessonName);
+    } else if (mode === 'fill') {
+      (ch.lessons||[]).filter(l=>l.type==='fill').forEach(l=>items.push({ptype:'fill',...l}));
+      items = strictSequenceForMode(items,'fill',lessonName);
+    } else if (mode === 'qa') {
+      (ch.lessons||[]).filter(l=>l.type==='qa').forEach(l=>items.push({ptype:'qa',...l}));
+      if (lessonName) items = items.filter(item=>lName(item)===lessonName);
+    } else if (mode === 'clock') {
+      for (let i=0;i<20;i++) items.push({ptype:'clock',hours:Math.floor(Math.random()*24),minutes:Math.floor(Math.random()*60)});
+    }
+    return items;
+  }
+
+  window.strictItemsForPractice = function(ch, mode, lessonName) { return filteredItems(ch, mode, lessonName); };
+  window.startPractice = function(mode, lessonName) {
+    const ch = getCh(); if (!ch) return;
+    _activeLessonFilter = lessonName || null;
+    let items = filteredItems(ch, mode, lessonName);
+    if (!items.length) { showToast('Keine Inhalte für diese Lektion!', 'err'); return; }
+    items = items.map(item => {
+      if (item.ptype !== 'vocab' && item.ptype !== 'sentence') return item;
+      let d = _dir; if (d === 'mixed') d = Math.random() < 0.5 ? 'cz-de' : 'de-cz';
+      return {...item, _dir:d};
+    });
+    const strictMode = ['order','sentorder','fill'].includes(mode);
+    _strictLessonSequenceActive = strictMode;
+    const deck = strictMode ? items.slice() : shuffleCopy(items);
+    _pAllItems = deck; _pChunkStart = 0; _pQ = strictMode ? deck.slice() : deck.slice(0,20);
+    _pI = 0; _pScore = 0; _pMode = mode; _pFlipped = false;
+    _mistakeCount = 0; _motivIdx = 0; _pRound = 1; _pOrigItems = _pQ.slice(); _pTotalScore = 0; _pTotalCards = 0;
+    const labels = {flashcard:'Karteikarte',mc:'Multiple Choice',sentences:'Sätze',order:'Satzbau',sentorder:'Satz-Reihenfolge',fill:'Lückentext',typing:'Schreiben',qa:'Frage-Antwort',clock:'Uhrzeit'};
+    const dirLabel = _dir === 'cz-de' ? '🇨🇿→🇦🇹' : _dir === 'de-cz' ? '🇦🇹→🇨🇿' : '↔';
+    const lessonPart = lessonName ? (' · ' + lessonName) : (LESSON_SELECTABLE_MODES.includes(mode) ? ' · alle Lektionen' : '');
+    if (hasFn('setPracticeModeTitle')) setPracticeModeTitle((labels[mode] || mode) + lessonPart + ' · ' + dirLabel, practiceModeCzLabel(mode));
+    else document.getElementById('p-mode-lbl').textContent = (labels[mode] || mode) + lessonPart + ' · ' + dirLabel;
+    startTimer(); showView('practice'); refreshTimers(); renderCard();
+  };
+
+  const __prevStartModeSelectAllModes = window.startModeSelect;
+  window.startModeSelect = function() {
+    const r = typeof __prevStartModeSelectAllModes === 'function' ? __prevStartModeSelectAllModes.apply(this, arguments) : undefined;
+    patchLessonModeCards();
+    const ch = getCh();
+    if (ch) {
+      const dis = (id, ok) => { const el = document.getElementById('mode-' + id); if (el) el.classList.toggle('disabled', !ok); };
+      dis('flashcard',(ch.vocab||[]).length>0 || (ch.sentences||[]).length>0);
+      dis('mc',(ch.vocab||[]).length>0);
+      dis('sentences',(ch.sentences||[]).length>0);
+      dis('typing',(ch.vocab||[]).length>0 || (ch.sentences||[]).length>0);
+      dis('order',(ch.lessons||[]).some(l=>l.type==='order'));
+      dis('sentorder',(ch.lessons||[]).some(l=>l.type==='sentence-order'));
+      dis('fill',(ch.lessons||[]).some(l=>l.type==='fill'));
+      dis('qa',(ch.lessons||[]).some(l=>l.type==='qa'));
+    }
+    return r;
+  };
+  function init(){ if (hasFn('ensureLessonSelectView')) ensureLessonSelectView(); patchLessonModeCards(); }
+  document.addEventListener('DOMContentLoaded', init); setTimeout(init, 300);
+})();
+</script>
+
+
+<script>
+/* PATCH V2: Grammatik Theorie/Praxis + Tabellenübungen inkl. Prüfung */
+(function(){
+  let gtDraft=null, gtActive=null;
+  function h(s){return typeof esc==='function'?esc(s):String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+  function j(s){return typeof escJ==='function'?escJ(s):String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+  function nt(s){return typeof norm==='function'?norm(s):String(s||'').toLowerCase().replace(/[.,!?;:]/g,'').replace(/\s+/g,' ').trim();}
+  function ch(){return typeof getCh==='function'?getCh():null;}
+  function persist(){if(typeof save==='function')save(_cache);}
+  function answers(t){return (t.cells||[]).filter(c=>c.kind!=='black').map(c=>c.answer||'').filter(Boolean).join('\n');}
+
+  function ensureGrammarPracticeAdmin(){
+    const tab=document.getElementById('tab-grammar'); if(!tab||document.getElementById('grammar-practice-admin'))return;
+    const oldTitle=tab.querySelector('.add-title'); if(oldTitle)oldTitle.textContent='+ Neue Grammatik-Theorie';
+    const oldBtn=tab.querySelector('button.btn-add'); if(oldBtn)oldBtn.textContent='Theorie speichern';
+    const box=document.createElement('div'); box.className='add-card'; box.id='grammar-practice-admin';
+    box.innerHTML='<div class="add-title">+ Neue Grammatik-Praxis: Tabelle</div><div class="fg"><label>Titel der Übung</label><input class="fc" id="gt-title" placeholder="z.B. Verbkonjugation Präsens"/></div><div class="frow"><div class="fg"><label>Spalten breit</label><input class="fc" id="gt-cols" type="number" min="1" max="10" value="6"/></div><div class="fg"><label>Reihen hoch</label><input class="fc" id="gt-rows" type="number" min="1" max="12" value="5"/></div></div><button class="btn-add ghost" onclick="prepareGrammarTableDraft()">Tabelle vorbereiten</button><div id="gt-editor"></div><button class="btn-add green" style="margin-top:10px" onclick="saveGrammarTableExercise()">Tabellenübung speichern</button>';
+    const list=document.getElementById('grammar-list'); tab.insertBefore(box,list||null);
+    if(!document.getElementById('grammar-table-list')){const l=document.createElement('div'); l.id='grammar-table-list'; (list&&list.parentNode?list.parentNode:tab).insertBefore(l,list?list.nextSibling:null);}
+    renderGrammarTableList();
+  }
+  window.prepareGrammarTableDraft=function(){const rows=Math.max(1,Math.min(12,parseInt((document.getElementById('gt-rows')||{}).value||'5',10)));const cols=Math.max(1,Math.min(10,parseInt((document.getElementById('gt-cols')||{}).value||'6',10)));gtDraft={rows,cols,cells:Array.from({length:rows*cols},()=>({kind:'white',text:'',answer:''}))};renderGrammarTableEditor();};
+  function renderGrammarTableEditor(){const ed=document.getElementById('gt-editor'); if(!ed||!gtDraft)return; ed.innerHTML='<div class="sec-title" style="margin:14px 0 8px">Zellen festlegen</div><div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">Schwarz = Vorgabe/Text. Weiß = Feld, das ausgefüllt wird. Bei weißen Feldern kommt die richtige Lösung hinein.</div><div class="gt-admin-grid" style="grid-template-columns:repeat('+gtDraft.cols+', minmax(88px,1fr))">'+gtDraft.cells.map((c,i)=>'<div class="gt-admin-cell '+(c.kind==='black'?'black':'')+'"><select onchange="setGrammarTableCellKind('+i+', this.value)"><option value="white" '+(c.kind==='white'?'selected':'')+'>weiß Antwort</option><option value="black" '+(c.kind==='black'?'selected':'')+'>schwarz Text</option></select><input placeholder="'+(c.kind==='black'?'Text':'Lösung')+'" value="'+h(c.kind==='black'?c.text:c.answer)+'" oninput="setGrammarTableCellValue('+i+', this.value)"/></div>').join('')+'</div>';}
+  window.setGrammarTableCellKind=function(i,kind){if(!gtDraft||!gtDraft.cells[i])return; gtDraft.cells[i].kind=kind; renderGrammarTableEditor();};
+  window.setGrammarTableCellValue=function(i,val){if(!gtDraft||!gtDraft.cells[i])return; if(gtDraft.cells[i].kind==='black')gtDraft.cells[i].text=val;else gtDraft.cells[i].answer=val;};
+  window.saveGrammarTableExercise=function(){const c=ch(); if(!c||!gtDraft){showToast('Bitte zuerst Tabelle vorbereiten!','err');return;} const title=((document.getElementById('gt-title')||{}).value||'Grammatik-Tabelle').trim(); if(!c.grammarTables)c.grammarTables=[]; c.grammarTables.push({id:uid(),title,rows:gtDraft.rows,cols:gtDraft.cols,cells:gtDraft.cells}); persist(); gtDraft=null; const t=document.getElementById('gt-title'); if(t)t.value=''; const ed=document.getElementById('gt-editor'); if(ed)ed.innerHTML=''; renderGrammarTableList(); if(typeof updCount==='function')updCount(); showToast('Tabellenübung gespeichert','ok');};
+  window.deleteGrammarTableExercise=function(id){const c=ch(); if(!c)return; c.grammarTables=(c.grammarTables||[]).filter(x=>x.id!==id); persist(); renderGrammarTableList(); if(typeof updCount==='function')updCount();};
+  function renderGrammarTableList(){const c=ch(),list=document.getElementById('grammar-table-list'); if(!c||!list)return; const arr=c.grammarTables||[]; list.innerHTML='<div class="sec-title" style="margin:18px 4px 8px">Grammatik-Praxis</div>'+(!arr.length?'<div class="empty-msg">Noch keine Tabellenübungen</div>':'<div class="list-card">'+arr.map(t=>'<div class="li-row"><div class="li-body"><div class="li-tag blue">Tabelle</div><div class="li-title">'+h(t.title)+'</div><div class="li-body-text">'+t.cols+' Spalten × '+t.rows+' Reihen</div></div><button class="btn-del" onclick="deleteGrammarTableExercise(\''+j(t.id)+'\')">×</button></div>').join('')+'</div>');}
+  const oldSwitchTab=window.switchTab; window.switchTab=function(tab){const r=oldSwitchTab?oldSwitchTab.apply(this,arguments):undefined;if(tab==='grammar')setTimeout(ensureGrammarPracticeAdmin,0);return r;};
+  const oldOpenChapter=window.openChapter; if(typeof oldOpenChapter==='function')window.openChapter=function(){const r=oldOpenChapter.apply(this,arguments);setTimeout(ensureGrammarPracticeAdmin,0);return r;};
+  const oldRenderGrammarList=window.renderGrammarList; window.renderGrammarList=function(){const r=oldRenderGrammarList?oldRenderGrammarList.apply(this,arguments):undefined;setTimeout(renderGrammarTableList,0);return r;};
+
+  window.showGrammar=function(){const c=ch(); if(!c)return; document.getElementById('gv-back').onclick=()=>startModeSelect(); document.getElementById('gv-title').textContent=c.name+' — Grammatik'; const tc=(c.grammar||[]).length, pc=(c.grammarTables||[]).length; document.getElementById('gv-list').innerHTML='<div class="grammar-menu-grid"><div class="grammar-menu-card" onclick="renderGrammarTitles()"><div class="grammar-menu-ico">📖</div><div class="grammar-menu-title">Theorie</div><div class="grammar-menu-sub">'+tc+' Schriftsätze / Regeln lesen<span class="cz">Přečíst si pravidla a vysvětlení</span></div></div><div class="grammar-menu-card" onclick="showGrammarPracticeMenu()"><div class="grammar-menu-ico">✍️</div><div class="grammar-menu-title">Praxis</div><div class="grammar-menu-sub">'+pc+' Tabellenübungen ausfüllen<span class="cz">Doplňovat gramatické tabulky</span></div></div></div>'; showView('grammar-view'); window.scrollTo(0,0);};
+  const oldRenderGrammarTitles=window.renderGrammarTitles; window.renderGrammarTitles=function(){if(oldRenderGrammarTitles)oldRenderGrammarTitles.apply(this,arguments); const back=document.getElementById('gv-back'); if(back)back.onclick=()=>showGrammar(); const title=document.getElementById('gv-title'),c=ch(); if(title&&c)title.textContent=c.name+' — Theorie';};
+  window.showGrammarPracticeMenu=function(){const c=ch(); if(!c)return; const arr=c.grammarTables||[]; document.getElementById('gv-back').onclick=()=>showGrammar(); document.getElementById('gv-title').textContent=c.name+' — Praxis'; document.getElementById('gv-list').innerHTML=!arr.length?'<div class="grammar-empty"><div class="grammar-empty-icon">✍️</div><div style="font-size:15px;font-weight:800;color:var(--text)">Keine Praxisübungen</div><div style="font-size:13px;margin-top:6px">Füge im Admin-Bereich unter Grammatik eine Tabellenübung hinzu.</div><div style="font-size:12px;margin-top:4px;color:var(--ink3)">Přidej v administraci gramatickou tabulku.</div></div>':arr.map(t=>'<div class="grammar-title-row" onclick="startGrammarTablePractice(\''+j(t.id)+'\')"><div><div class="gtr-title">'+h(t.title)+'</div><div class="ch-meta">'+t.cols+' Spalten × '+t.rows+' Reihen<span class="cz"> · gramatická tabulka</span></div></div><div class="gtr-arr">›</div></div>').join('');};
+  window.startGrammarTablePractice=function(id){const c=ch(); if(!c)return; gtActive=(c.grammarTables||[]).find(x=>x.id===id); if(!gtActive)return; _pMode='gtable'; _pI=0; _pScore=0; _pQ=[gtActive]; _pAllItems=[gtActive]; if(typeof startTimer==='function')startTimer(); if(typeof setPracticeModeTitle==='function')setPracticeModeTitle('Grammatik-Praxis · '+gtActive.title,'Gramatika – cvičení'); showView('practice'); renderGrammarTablePractice(gtActive,false);};
+  function grammarTableHtml(t){const rows=[]; for(let r=0;r<t.rows;r++){let cells=''; for(let c=0;c<t.cols;c++){const idx=r*t.cols+c, cell=(t.cells||[])[idx]||{kind:'white',answer:''}; cells+=cell.kind==='black'?'<td class="gt-black">'+h(cell.text)+'</td>':'<td class="gt-white"><input data-answer="'+h(cell.answer)+'" placeholder="…" autocomplete="off"/></td>';} rows.push('<tr>'+cells+'</tr>');} return '<div class="gt-practice-wrap"><table class="gt-practice-table">'+rows.join('')+'</table></div>';}
+  function renderGrammarTablePractice(t,asCard){const pc=document.getElementById('p-content'); if(!t||!pc)return; pc.innerHTML='<div class="p-card"><div class="p-badge">Grammatik-Tabelle</div><div class="p-word" style="font-size:22px">'+h(t.title)+'</div><div class="p-hint">Fülle die weißen Felder aus.<br><span class="cz">Doplň bílá pole.</span></div></div>'+grammarTableHtml(t)+'<button class="btn-check" onclick="checkGrammarTablePractice('+(asCard?'true':'false')+')">Prüfen</button><button class="btn-skip" onclick="'+(asCard?'nextCard()':'showGrammarPracticeMenu();showView(\'grammar-view\');if(typeof stopTimer===\'function\')stopTimer();')+'">'+(asCard?'Weiter':'Zurück')+'</button>'; const fill=document.getElementById('p-fill'); if(fill)fill.style.width='0%'; const count=document.getElementById('p-count'); if(count)count.textContent='0 / '+pc.querySelectorAll('input').length;}
+  window.checkGrammarTablePractice=function(asCard){const inputs=Array.from(document.querySelectorAll('.gt-practice-table input')); let ok=0; inputs.forEach(inp=>{const good=nt(inp.value)===nt(inp.dataset.answer); inp.classList.toggle('ok',good); inp.classList.toggle('bad',!good); if(good)ok++;}); const allOk=ok===inputs.length; const fill=document.getElementById('p-fill'); if(fill)fill.style.width=(inputs.length?ok/inputs.length*100:100)+'%'; const count=document.getElementById('p-count'); if(count)count.textContent=ok+' / '+inputs.length; if(asCard&&typeof showFeedback==='function')return showFeedback(allOk,answers((_pQ||[])[_pI]||gtActive||{})); showToast(allOk?'Alles richtig!':(ok+' von '+inputs.length+' richtig'),allOk?'ok':'err');};
+
+  function gtItems(c){return (c.grammarTables||[]).map(t=>({ptype:'gtable',_lcMode:'gtable',...t}));}
+  const oldLabel=window.lessonCheckLabel; window.lessonCheckLabel=function(item){if(item&&item._lcMode==='gtable')return'Grammatik-Praxis'; return oldLabel?oldLabel(item):'Lektionsüberprüfung';};
+  const oldCz=window.lessonCheckCzLabel; window.lessonCheckCzLabel=function(item){if(item&&item._lcMode==='gtable')return'Gramatika – cvičení'; return oldCz?oldCz(item):'';};
+  const oldRenderLC=window.renderLessonCheckItem; window.renderLessonCheckItem=function(item,ctn){if(item&&item._lcMode==='gtable'){if(typeof setPracticeModeTitle==='function')setPracticeModeTitle('Lektionsüberprüfung · Grammatik-Praxis','Gramatika – cvičení');renderGrammarTablePractice(item,true);return;} return oldRenderLC?oldRenderLC(item,ctn):null;};
+  const oldBlocks=window.lessonCheckBlocksForChapter; if(typeof oldBlocks==='function')window.lessonCheckBlocksForChapter=function(c){const blocks=oldBlocks(c)||[]; gtItems(c).forEach(i=>blocks.push([i])); return blocks;};
+  const oldItems=window.lessonCheckItemsForChapter; window.lessonCheckItemsForChapter=function(c){let items=oldItems?oldItems(c):[]; if(!items.some(i=>i&&i._lcMode==='gtable'))items=items.concat(gtItems(c)); return typeof lessonCheckShuffle==='function'?lessonCheckShuffle(items):items.sort(()=>Math.random()-.5);};
+  window.lessonCheckItemsForAllChapters=function(){const blocks=[];(_cache.chapters||[]).forEach(c=>{const base=typeof window.lessonCheckBlocksForChapter==='function'?window.lessonCheckBlocksForChapter(c):(window.lessonCheckItemsForChapter(c)||[]).map(x=>[x]); base.forEach(block=>{const e=block.map(item=>({...item,_chapterId:c.id,_chapterName:c.name||'Kapitel'})); e._blockName=block._blockName?(c.id+':'+block._blockName):undefined; blocks.push(e);});}); return typeof flattenLessonCheckBlocks==='function'?flattenLessonCheckBlocks(blocks):blocks.sort(()=>Math.random()-.5).flat();};
+  const oldSMS=window.startModeSelect; window.startModeSelect=function(){const r=oldSMS?oldSMS.apply(this,arguments):undefined; const c=ch(),lc=document.getElementById('mode-lessoncheck'),gm=document.getElementById('mode-grammar'); if(lc&&c){const has=(c.vocab||[]).length||(c.sentences||[]).length||(c.lessons||[]).some(l=>['order','sentence-order','fill','qa'].includes(l.type))||(c.grammarTables||[]).length; lc.classList.toggle('disabled',!has);} if(gm&&c){gm.classList.toggle('disabled',!((c.grammar||[]).length||(c.grammarTables||[]).length));} return r;};
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(ensureGrammarPracticeAdmin,250));
+})();
+</script>
+
+
+<script>
+/* HOTFIX: Lektionsauswahl-View wiederherstellen
+   Ursache: Die Mode-Kacheln wurden auf openLessonSelect(...) umgestellt,
+   aber die dynamisch erzeugte View #lesson-select fehlte in dieser Datei.
+   Wirkung: Klicks im Übungsmodus liefen ins Leere.
+   Minimaler Fix: Nur die fehlende View-Funktion ergänzen, bestehende Logik bleibt unverändert. */
+(function(){
+  if (typeof window.ensureLessonSelectView !== 'function') {
+    window.ensureLessonSelectView = function ensureLessonSelectView() {
+      if (document.getElementById('lesson-select')) return;
+      const modeSelect = document.getElementById('mode-select');
+      if (!modeSelect) return;
+      const view = document.createElement('div');
+      view.className = 'view';
+      view.id = 'lesson-select';
+      view.innerHTML =
+        '<div class="navbar">'
+        + '<button class="btn-back" onclick="startModeSelect()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Zurück</button>'
+        + '<span class="navbar-title" id="lesson-select-title">Lektion wählen</span><span></span>'
+        + '</div>'
+        + '<div class="scroll"><div style="padding:16px 16px 90px" id="lesson-select-list"></div></div>';
+      modeSelect.insertAdjacentElement('afterend', view);
+    };
+  }
+  function runHotfix(){
+    if (typeof window.ensureLessonSelectView === 'function') window.ensureLessonSelectView();
+    if (typeof window.patchLessonModeCards === 'function') window.patchLessonModeCards();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', runHotfix);
+  else runHotfix();
+})();
+</script>
+
+<script>
+/* FINAL HOTFIX: Navigation Kapitelübersicht / Lektionsüberprüfung / Prüfungs-Simulation
+   Zweck: Nach Layout-Patches die Kernnavigation deterministisch wiederherstellen. */
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function arr(v){ return Array.isArray(v) ? v : []; }
+  function hasChapterPracticeContent(ch){
+    if (!ch) return false;
+    return arr(ch.vocab).length > 0 || arr(ch.sentences).length > 0 ||
+      arr(ch.lessons).some(l => ['order','sentence-order','fill','qa'].includes(l.type)) ||
+      arr(ch.grammarTables).length > 0;
+  }
+  function hasAnyGlobalPracticeContent(){ return arr((_cache || {}).chapters).some(hasChapterPracticeContent); }
+  function safeToast(msg,type){ if (typeof showToast === 'function') showToast(msg,type||'err'); }
+  function safeSetTitle(de,cz){
+    if (typeof setPracticeModeTitle === 'function') setPracticeModeTitle(de,cz||'');
+    else { const l=byId('p-mode-lbl'); if(l) l.textContent=de; }
+  }
+  function examRecText(){
+    if (typeof globalExamRecordText === 'function') return globalExamRecordText();
+    const r = _cache && _cache.examRecords && (_cache.examRecords.globalExam || _cache.examRecords.lastGlobalExam);
+    if (!r) return 'Noch kein Rekord';
+    return 'Rekord: ' + r.score + '/' + (r.total || '?');
+  }
+  function forceLessonSelectCards(){
+    if (typeof ensureLessonSelectView === 'function') ensureLessonSelectView();
+    if (typeof patchLessonModeCards === 'function') patchLessonModeCards();
+  }
+  function forceEnsureLessonCheckCard(){
+    let card = byId('mode-lessoncheck');
+    const grid = document.querySelector('#mode-select .mode-grid');
+    if (!card && grid) {
+      card = document.createElement('div');
+      card.className = 'mode-card';
+      card.id = 'mode-lessoncheck';
+      card.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="mode-name">Lektionsüberprüfung</div><div class="mode-desc" id="lessoncheck-record">Noch kein Rekord<span class="cz">Smíšený test lekce</span></div><div class="mode-bar" style="background:#1A1714"></div>';
+      const weak = byId('mode-weak');
+      grid.insertBefore(card, weak || null);
+    }
+    if (card) {
+      card.onclick = function(e){ if (e) e.stopPropagation(); window.startLessonCheck(); };
+      if (typeof refreshLessonCheckRecordOnButton === 'function') refreshLessonCheckRecordOnButton();
+    }
+    return card;
+  }
+  window.startModeSelect = function startModeSelectFinalStable(){
+    const ch = typeof getCh === 'function' ? getCh() : null;
+    if (!ch) return;
+    forceLessonSelectCards();
+    const hasVocab = arr(ch.vocab).length > 0;
+    const hasSent = arr(ch.sentences).length > 0;
+    const hasOrder = arr(ch.lessons).some(l => l.type === 'order');
+    const hasSentenceOrder = arr(ch.lessons).some(l => l.type === 'sentence-order');
+    const hasFill = arr(ch.lessons).some(l => l.type === 'fill');
+    const hasQA = arr(ch.lessons).some(l => l.type === 'qa');
+    const hasGrammar = arr(ch.grammar).length > 0 || arr(ch.grammarTables).length > 0;
+    const hasWeak = _cache && _cache.weak && Object.keys(_cache.weak).length > 0;
+    const hasAny = hasChapterPracticeContent(ch);
+    const dis = (id, ok) => { const el = byId('mode-' + id); if (el) el.classList.toggle('disabled', !ok); };
+    dis('flashcard', hasVocab || hasSent); dis('mc', hasVocab); dis('sentences', hasSent);
+    dis('order', hasOrder); dis('sentorder', hasSentenceOrder); dis('fill', hasFill); dis('qa', hasQA);
+    dis('typing', hasVocab || hasSent); dis('clock', true); dis('grammar', hasGrammar); dis('weak', hasWeak);
+    const lessonCard = forceEnsureLessonCheckCard(); if (lessonCard) lessonCard.classList.toggle('disabled', !hasAny);
+    const hints = [];
+    if (!hasVocab && !hasSent) hints.push('Vokabeln oder Sätze hinzufügen für Karteikarten & Schreiben.');
+    if (!hasOrder) hints.push('Satzbau-Lektionen hinzufügen.');
+    if (!hasSentenceOrder) hints.push('Satz-Reihenfolge hinzufügen.');
+    if (!hasFill) hints.push('Lückentext-Lektionen hinzufügen.');
+    if (!hasQA) hints.push('Frage-Antwort-Lektionen hinzufügen.');
+    const hint = byId('mode-hint'); if (hint) hint.textContent = hints[0] || '';
+    if (typeof updateWeakCount === 'function') updateWeakCount();
+    showView('mode-select');
+  };
+  window.startLessonCheck = function startLessonCheckFinalStable(){
+    const ch = typeof getCh === 'function' ? getCh() : null;
+    if (!ch) return;
+    let items = [];
+    if (typeof lessonCheckItemsForChapter === 'function') items = lessonCheckItemsForChapter(ch) || [];
+    if (!items.length && typeof lessonCheckBlocksForChapter === 'function' && typeof flattenLessonCheckBlocks === 'function') items = flattenLessonCheckBlocks(lessonCheckBlocksForChapter(ch));
+    if (!items.length) { safeToast('Keine Inhalte für die Lektionsüberprüfung!', 'err'); return; }
+    if (typeof _strictLessonSequenceActive !== 'undefined') _strictLessonSequenceActive = false;
+    if (typeof _globalLessonCheckActive !== 'undefined') _globalLessonCheckActive = false;
+    _lessonCheckActive = true; _lessonCheckStartMs = Date.now(); _lessonCheckScore = 0; _lessonCheckTotal = items.length;
+    _pQ = items; _pI = 0; _pScore = 0; _pMode = 'lessoncheck'; _pFlipped = false;
+    _pAllItems = items.slice(); _pChunkStart = 0; _pTotalScore = 0; _pTotalCards = 0; _pRound = 1;
+    safeSetTitle('Lektionsüberprüfung · gemischter Test', typeof practiceModeCzLabel === 'function' ? practiceModeCzLabel('lessoncheck') : 'Kontrola lekce');
+    startTimer(); showView('practice'); refreshTimers(); renderCard();
+  };
+  function globalItems(){
+    if (typeof lessonCheckItemsForAllChapters === 'function') return lessonCheckItemsForAllChapters() || [];
+    let out = [];
+    arr((_cache || {}).chapters).forEach(ch => {
+      if (typeof lessonCheckItemsForChapter === 'function') out = out.concat((lessonCheckItemsForChapter(ch) || []).map(i => ({...i, _chapterId:ch.id, _chapterName:ch.name||'Kapitel'})));
+    });
+    return typeof lessonCheckShuffle === 'function' ? lessonCheckShuffle(out) : out.sort(() => Math.random() - .5);
+  }
+  window.startGlobalLessonCheck = function startGlobalLessonCheckFinalStable(){
+    if (!arr((_cache || {}).chapters).length) { safeToast('Noch keine Kapitel vorhanden!', 'err'); return; }
+    const items = globalItems();
+    if (!items.length) { safeToast('Keine Inhalte für die Prüfungs-Simulation!', 'err'); return; }
+    if (typeof _strictLessonSequenceActive !== 'undefined') _strictLessonSequenceActive = false;
+    _globalLessonCheckActive = true; _lessonCheckActive = true; _lessonCheckStartMs = Date.now(); _lessonCheckScore = 0; _lessonCheckTotal = items.length;
+    _pQ = items; _pI = 0; _pScore = 0; _pMode = 'lessoncheck'; _pFlipped = false;
+    _pAllItems = items.slice(); _pChunkStart = 0; _pTotalScore = 0; _pTotalCards = 0; _pRound = 1;
+    safeSetTitle('Prüfungs-Simulation · alle Kapitel', typeof practiceModeCzLabel === 'function' ? practiceModeCzLabel('globalcheck') : 'Zkušební simulace');
+    startTimer(); showView('practice'); refreshTimers(); renderCard();
+  };
+  function globalExamCardHtmlFinal(){
+    const chapters = arr((_cache || {}).chapters);
+    const hasAny = hasAnyGlobalPracticeContent();
+    const desc = chapters.length === 1 ? 'Prüfung aus 1 Kapitel' : 'Prüfung aus ' + chapters.length + ' Kapiteln';
+    return '<div class="bento-card wide" id="global-exam-card" style="background:#F5EBE4;border:1px solid rgba(196,123,90,.22);' + (!hasAny ? 'opacity:.45;pointer-events:none;' : '') + '">' +
+      '<div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>' +
+      '<div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div>' +
+      '<div class="bento-meta">' + (hasAny ? desc + ' · alle Inhalte gemischt' : 'Noch keine prüfbaren Inhalte') + '</div>' +
+      '<div class="bento-meta" style="margin-top:2px;color:var(--ink3)">Zkušební simulace ze všech kapitol</div>' +
+      '<div class="bento-meta" id="global-exam-record" style="margin-top:3px;font-weight:800">' + examRecText() + '</div>' +
+      (hasAny ? '<button class="bento-btn" style="background:var(--ink)" type="button">Prüfung starten</button>' : '') + '</div></div>';
+  }
+  const previousRenderLearnListFinal = window.renderLearnList;
+  window.renderLearnList = function renderLearnListFinalStable(){
+    if (typeof previousRenderLearnListFinal === 'function') previousRenderLearnListFinal.apply(this, arguments);
+    const container = byId('learn-ch-list'); if (!container) return;
+    const chapters = arr((_cache || {}).chapters); if (!chapters.length) return;
+    const old = byId('global-exam-card'); if (old) old.remove();
+    container.className = 'bento-grid';
+    container.insertAdjacentHTML('afterbegin', globalExamCardHtmlFinal());
+    const card = byId('global-exam-card');
+    if (card && hasAnyGlobalPracticeContent()) {
+      card.onclick = function(){ window.startGlobalLessonCheck(); };
+      const btn = card.querySelector('button'); if (btn) btn.onclick = function(e){ e.stopPropagation(); window.startGlobalLessonCheck(); };
+    }
+  };
+  function initFinalStable(){
+    if (typeof ensureLessonSelectView === 'function') ensureLessonSelectView();
+    forceEnsureLessonCheckCard();
+    if (byId('learn-home') && byId('learn-home').classList.contains('active')) window.renderLearnList();
+    if (byId('mode-select') && byId('mode-select').classList.contains('active')) window.startModeSelect();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFinalStable); else initFinalStable();
+})();
+</script>
+
+
+<script>
+/* FINAL-FINAL HOTFIX: Lektionsüberprüfung + Prüfungs-Simulation wirklich klickbar
+   Ursache: Nach mehreren Layout-/Navigation-Patches konnten die Karten durch .disabled/pointer-events
+   blockiert werden oder nach Render-Zyklen ihren Handler verlieren. Dieser Patch verändert keine
+   Datenstruktur und keine Übungslogik, sondern stellt die Click-Handler nach jedem Render deterministisch her. */
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function arr(v){ return Array.isArray(v) ? v : []; }
+  function toast(msg,type){ if (typeof showToast === 'function') showToast(msg,type||'err'); }
+  function setTitle(de,cz){
+    if (typeof setPracticeModeTitle === 'function') setPracticeModeTitle(de,cz||'');
+    else { var el=byId('p-mode-lbl'); if(el) el.textContent=de; }
+  }
+  function currentChapter(){ try { return (typeof getCh === 'function') ? getCh() : null; } catch(e){ return null; } }
+  function basicItemsForChapter(ch){
+    var out=[];
+    arr(ch && ch.vocab).forEach(function(v){ out.push(Object.assign({ptype:'vocab',_lcMode:'flashcard',_dir:'cz-de'},v)); });
+    arr(ch && ch.sentences).forEach(function(s){ out.push(Object.assign({ptype:'sentence',_lcMode:'typing',_dir:'cz-de'},s)); });
+    arr(ch && ch.lessons).forEach(function(l){
+      if(l.type==='order') out.push(Object.assign({ptype:'order',_lcMode:'order'},l));
+      if(l.type==='sentence-order') out.push(Object.assign({ptype:'sentorder',_lcMode:'sentorder'},l));
+      if(l.type==='fill') out.push(Object.assign({ptype:'fill',_lcMode:'fill'},l));
+      if(l.type==='qa') out.push(Object.assign({ptype:'qa',_lcMode:'qa'},l));
+    });
+    arr(ch && ch.grammarTables).forEach(function(t){ out.push(Object.assign({ptype:'gtable',_lcMode:'gtable'},t)); });
+    if (!out.length && typeof lessonCheckBuildClockItems === 'function') out = lessonCheckBuildClockItems(8);
+    return (typeof lessonCheckShuffle === 'function') ? lessonCheckShuffle(out) : out.sort(function(){return Math.random()-.5;});
+  }
+  function lessonItems(ch){
+    var items=[];
+    try { if (typeof window.lessonCheckItemsForChapter === 'function') items = window.lessonCheckItemsForChapter(ch) || []; } catch(e) { items=[]; }
+    if (!items.length) items = basicItemsForChapter(ch);
+    return items;
+  }
+  function allItems(){
+    var items=[];
+    try { if (typeof window.lessonCheckItemsForAllChapters === 'function') items = window.lessonCheckItemsForAllChapters() || []; } catch(e) { items=[]; }
+    if (!items.length) {
+      arr((_cache||{}).chapters).forEach(function(ch){
+        lessonItems(ch).forEach(function(i){ items.push(Object.assign({_chapterId:ch.id,_chapterName:ch.name||'Kapitel'},i)); });
+      });
+      if (typeof lessonCheckShuffle === 'function') items = lessonCheckShuffle(items);
+    }
+    return items;
+  }
+  function startExamWithItems(items, isGlobal){
+    if (!items.length) { toast(isGlobal ? 'Keine Inhalte für die Prüfungs-Simulation!' : 'Keine Inhalte für die Lektionsüberprüfung!', 'err'); return; }
+    try { if (typeof _strictLessonSequenceActive !== 'undefined') _strictLessonSequenceActive = false; } catch(e){}
+    try { if (typeof _globalLessonCheckActive !== 'undefined') _globalLessonCheckActive = !!isGlobal; } catch(e){}
+    _lessonCheckActive = true;
+    _lessonCheckStartMs = Date.now();
+    _lessonCheckScore = 0;
+    _lessonCheckTotal = items.length;
+    _pQ = items; _pI = 0; _pScore = 0; _pMode = 'lessoncheck'; _pFlipped = false;
+    _pAllItems = items.slice(); _pChunkStart = 0; _pTotalScore = 0; _pTotalCards = 0; _pRound = 1;
+    setTitle(isGlobal ? 'Prüfungs-Simulation · alle Kapitel' : 'Lektionsüberprüfung · gemischter Test',
+      (typeof practiceModeCzLabel === 'function') ? practiceModeCzLabel(isGlobal?'globalcheck':'lessoncheck') : (isGlobal?'Zkušební simulace':'Kontrola lekce'));
+    if (typeof startTimer === 'function') startTimer();
+    showView('practice');
+    if (typeof refreshTimers === 'function') refreshTimers();
+    if (typeof renderCard === 'function') renderCard();
+  }
+  window.startLessonCheck = function(){
+    var ch = currentChapter();
+    if (!ch) { toast('Bitte zuerst ein Kapitel öffnen.', 'err'); return; }
+    startExamWithItems(lessonItems(ch), false);
+  };
+  window.startGlobalLessonCheck = function(){
+    if (!arr((_cache||{}).chapters).length) { toast('Noch keine Kapitel vorhanden!', 'err'); return; }
+    startExamWithItems(allItems(), true);
+  };
+  function examText(){
+    try { if (typeof globalExamRecordText === 'function') return globalExamRecordText(); } catch(e){}
+    var r = _cache && _cache.examRecords && (_cache.examRecords.globalExam || _cache.examRecords.lastGlobalExam);
+    return r ? ('Rekord: '+r.score+'/'+(r.total||'?')) : 'Noch kein Rekord';
+  }
+  function ensureModeHandlers(){
+    var lc = byId('mode-lessoncheck');
+    if (lc) {
+      lc.classList.remove('disabled');
+      lc.style.pointerEvents = 'auto';
+      lc.onclick = function(e){ if(e) e.stopPropagation(); window.startLessonCheck(); };
+    }
+  }
+  function globalCardHtml(){
+    var chapters = arr((_cache||{}).chapters);
+    var desc = chapters.length === 1 ? 'Prüfung aus 1 Kapitel' : 'Prüfung aus ' + chapters.length + ' Kapiteln';
+    return '<div class="bento-card wide" id="global-exam-card" style="background:#F5EBE4;border:1px solid rgba(196,123,90,.22);pointer-events:auto;cursor:pointer">'
+      + '<div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>'
+      + '<div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div>'
+      + '<div class="bento-meta">'+desc+' · alle Inhalte gemischt</div>'
+      + '<div class="bento-meta" style="margin-top:2px;color:var(--ink3)">Zkušební simulace ze všech kapitol</div>'
       + '<div class="bento-meta" id="global-exam-record" style="margin-top:3px;font-weight:800">'+examText()+'</div>'
       + '<button class="bento-btn" style="background:var(--ink)" type="button">Prüfung starten</button></div></div>';
   }

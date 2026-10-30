@@ -16,6 +16,10 @@
     for(const group of groups.values()){
       const members=cards.filter(card=>group.chapters.some(ch=>grid?card.dataset.chapterId===ch.id:card.getAttribute('onclick')==="openChapter('"+ch.id+"')"));
       if(!members.length)continue;
+      if(grid)members.forEach(card=>{
+        const ch=group.chapters.find(ch=>ch.id===card.dataset.chapterId),meta=card.querySelector('.bento-meta');
+        if(ch?.grammar?.length&&meta)meta.textContent=(meta.textContent==='Noch leer'?'':meta.textContent+' · ')+ch.grammar.length+' Lesekarten';
+      });
       const details=document.createElement('details');details.dataset.chapterGroup=group.id;details.open=expanded.has(group.id);
       details.style.cssText='grid-column:1/-1;background:var(--cream);border:1px solid var(--ink3);border-radius:20px;padding:16px;margin:8px 0';
       const summary=document.createElement('summary');summary.style.cssText='cursor:pointer;font-weight:900;font-size:19px;line-height:1.5';

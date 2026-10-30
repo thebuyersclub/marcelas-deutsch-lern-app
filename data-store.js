@@ -164,6 +164,33 @@
     await load();window.renderAdminList();
     return chapters;
   }
+  async function appendChapterPackage(input){
+    if(user()?.role!=='admin')throw new Error('Nur für die Administration verfügbar.');
+    if(dirty)throw new Error('Bitte zuerst offene Änderungen speichern oder sichern.');
+    if(input?.format!=='marcela-chapter-package-v1'||!Array.isArray(input.chapters)||!input.chapters.length)throw new Error('Ungültiges Kapitelpaket.');
+    const incoming=clone(input.chapters),ids=new Set();
+    for(const ch of incoming){
+      if(!ch||!/^[-a-z0-9]+$/.test(ch.id)||ids.has(ch.id)||typeof ch.name!=='string'||!ch.name.trim())throw new Error('Ungültige oder doppelte Kapitelkennung.');
+      ids.add(ch.id);
+      if(!ch.specialGroup||!/^[-a-z0-9]+$/.test(ch.specialGroup.id)||typeof ch.specialGroup.nameDe!=='string'||typeof ch.specialGroup.nameCz!=='string')throw new Error('Sonderkapitel-Bezeichnung fehlt.');
+      for(const key of ['vocab','sentences','grammar','lessons'])if(!Array.isArray(ch[key]))throw new Error('Ungültiger Kapitelinhalt.');
+    }
+    const current=await getBase();
+    if(!current.doc)throw new Error('Die vorhandene Datenbank konnte nicht geladen werden.');
+    const existing=new Map(current.chapters.map(ch=>[ch.id,ch]));
+    for(const ch of incoming){
+      if(existing.has(ch.id)&&JSON.stringify(existing.get(ch.id))!==JSON.stringify(ch))throw new Error('Ein Kapitel mit dieser Kennung existiert bereits mit anderem Inhalt. Es wird nichts überschrieben.');
+    }
+    const additions=incoming.filter(ch=>!existing.has(ch.id));
+    if(!additions.length){status('Dieses Sonderkapitel ist bereits vollständig vorhanden.');return 0;}
+    const merged=[...current.chapters,...additions];
+    await request('/app/data?currentDocument.updateTime='+encodeURIComponent(current.doc.updateTime),{method:'PATCH',body:JSON.stringify({fields:{chapters:{stringValue:JSON.stringify(merged)}}})});
+    const check=await getBase();
+    if(JSON.stringify(check.chapters)!==JSON.stringify(merged))throw new Error('Die Kontrolle nach dem Import ist fehlgeschlagen. Bitte Lerninhalte sichern und prüfen.');
+    await load();window.renderAdminList();
+    status('Sonderkapitel gespeichert und geprüft: '+additions.length+' neue Unterkapitel.');
+    return additions.length;
+  }
   async function verifyAndArchive(input){
     if(user()?.role!=='admin')throw new Error('Nur für die Administration verfügbar.');
     const original=chaptersFromBackup(input),current=await getBase();
@@ -202,7 +229,7 @@
       }catch(_){status('Cloud derzeit nicht erreichbar. Die geladenen Inhalte bleiben nutzbar.',true);}
     },30000);
   }
-  window.marcelaData=Object.freeze({load,save,retryPending,localBackup,addEntry,importBackup,verifyAndArchive,exportContent,chaptersFromBackup,status});
+  window.marcelaData=Object.freeze({load,save,retryPending,localBackup,addEntry,importBackup,appendChapterPackage,verifyAndArchive,exportContent,chaptersFromBackup,status});
   window.loadData=load;
   window.cloudLoad=load;
   window.cloudSave=save;

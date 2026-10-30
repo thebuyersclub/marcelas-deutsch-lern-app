@@ -41,6 +41,33 @@
         finally{input.disabled=false;input.value='';}
       });
       label.append(input);maintenance.append(label);box.append(maintenance);document.getElementById('home').querySelector('.scroll').append(box);
+      const packageDetails=document.createElement('details'),packageSummary=document.createElement('summary');
+      packageSummary.textContent='Sonderkapitel hinzufügen';packageDetails.append(packageSummary);
+      const packageLabel=document.createElement('label');packageLabel.textContent='Vorbereitetes Kapitelpaket auswählen: ';
+      const packageInput=document.createElement('input');packageInput.type='file';packageInput.accept='.json,application/json';
+      const preview=document.createElement('p'),importButton=document.createElement('button');
+      importButton.type='button';importButton.textContent='Sonderkapitel jetzt hinzufügen';importButton.disabled=true;
+      let preparedPackage=null;
+      packageInput.addEventListener('change',async()=>{
+        preparedPackage=null;importButton.disabled=true;preview.textContent='';
+        try{
+          if(!packageInput.files[0])return;
+          const data=JSON.parse(await packageInput.files[0].text());
+          if(data.format!=='marcela-chapter-package-v1'||!Array.isArray(data.chapters)||!data.chapters.length)throw new Error('Bitte ein gültiges Kapitelpaket auswählen.');
+          preparedPackage=data;preview.textContent=data.title+' · '+data.chapters.length+' Unterkapitel. Bestehende Kapitel werden erhalten. Vorher wird eine Sicherung heruntergeladen.';importButton.disabled=false;
+        }catch(error){preview.textContent=error.message;}
+      });
+      importButton.addEventListener('click',async()=>{
+        if(!preparedPackage)return;importButton.disabled=true;packageInput.disabled=true;
+        try{
+          const backupData=await window.marcelaData.exportContent();
+          const url=URL.createObjectURL(new Blob([JSON.stringify(backupData,null,2)],{type:'application/json'}));
+          const link=document.createElement('a');link.href=url;link.download='marcela-vor-sonderkapitel-'+new Date().toISOString().slice(0,10)+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+          await window.marcelaData.appendChapterPackage(preparedPackage);preview.textContent='Sonderkapitel erfolgreich hinzugefügt und online geprüft.';preparedPackage=null;
+        }catch(error){preview.textContent=error.message;window.marcelaData.status(error.message,true);importButton.disabled=false;}
+        finally{packageInput.disabled=false;}
+      });
+      packageLabel.append(packageInput);packageDetails.append(packageLabel,preview,importButton);box.append(packageDetails);
     }else{
       box.innerHTML='<details><summary>Wort oder Satz hinzufügen</summary><form style="display:grid;gap:10px;margin-top:12px"><label>Art <select name="type"><option value="vocab">Wort</option><option value="sentence">Satz</option></select></label><label>Deutsch <input name="de" required maxlength="2000"></label><label>Tschechisch <input name="cz" required maxlength="2000"></label><label>Beispiel <input name="example" maxlength="4000"></label><button type="submit">Hinzufügen</button><p role="status"></p></form></details>';
       const form=box.querySelector('form');form.addEventListener('submit',async event=>{

@@ -236,7 +236,7 @@
     for(const ch of incoming){
       if(!ch||!/^[-a-z0-9]+$/.test(ch.id)||ids.has(ch.id)||typeof ch.name!=='string'||!ch.name.trim())throw new Error('Ungültige oder doppelte Kapitelkennung.');
       ids.add(ch.id);
-      if(!ch.specialGroup||!/^[-a-z0-9]+$/.test(ch.specialGroup.id)||typeof ch.specialGroup.nameDe!=='string'||typeof ch.specialGroup.nameCz!=='string')throw new Error('Sonderkapitel-Bezeichnung fehlt.');
+      if(ch.specialGroup&&(!/^[-a-z0-9]+$/.test(ch.specialGroup.id)||typeof ch.specialGroup.nameDe!=='string'||typeof ch.specialGroup.nameCz!=='string'))throw new Error('Sonderkapitel-Bezeichnung fehlt.');
       for(const key of ['vocab','sentences','grammar','lessons'])if(!Array.isArray(ch[key]))throw new Error('Ungültiger Kapitelinhalt.');
     }
     const current=await getBase();
@@ -252,7 +252,7 @@
     const check=await getBase();
     if(JSON.stringify(check.chapters)!==JSON.stringify(merged))throw new Error('Die Kontrolle nach dem Import ist fehlgeschlagen. Bitte Lerninhalte sichern und prüfen.');
     await load();window.renderAdminList();
-    status('Sonderkapitel gespeichert und geprüft: '+additions.length+' neue Unterkapitel.');
+    status('Sonderkapitel gespeichert und geprüft: '+additions.length+' neue Kapitel.');
     return additions.length;
   }
   async function verifyAndArchive(input){

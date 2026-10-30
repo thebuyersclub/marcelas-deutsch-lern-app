@@ -54,7 +54,7 @@
           if(!packageInput.files[0])return;
           const data=JSON.parse(await packageInput.files[0].text());
           if(data.format!=='marcela-chapter-package-v1'||!Array.isArray(data.chapters)||!data.chapters.length)throw new Error('Bitte ein gültiges Kapitelpaket auswählen.');
-          preparedPackage=data;preview.textContent=data.title+' · '+data.chapters.length+' Unterkapitel. Bestehende Kapitel werden erhalten. Vorher wird eine Sicherung heruntergeladen.';importButton.disabled=false;
+          preparedPackage=data;preview.textContent=data.title+' · '+data.chapters.length+' Kapitel. Bestehende Kapitel werden erhalten. Vorher wird eine Sicherung heruntergeladen.';importButton.disabled=false;
         }catch(error){preview.textContent=error.message;}
       });
       importButton.addEventListener('click',async()=>{

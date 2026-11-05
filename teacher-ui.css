@@ -1,6 +1,6 @@
 #teacher-view {
-  background: var(--cream, #fafaf7);
-  color: var(--ink, #211e1a);
+  background: #f7f7f7;
+  color: #000;
   font-family: Nunito, system-ui;
 }
 #teacher-view .teacher-wrap {
@@ -27,6 +27,8 @@
   width: fit-content;
   max-width: 94%;
   min-width: 0;
+  background: #fff;
+  border: 2px solid #000;
   border-radius: 38px;
   padding: 20px clamp(18px, 5vw, 30px);
   overflow-wrap: anywhere;
@@ -34,41 +36,46 @@
 .teacher-bubble::before {
   content: '';
   position: absolute;
-  top: 25px;
-  width: 18px;
-  height: 20px;
-  background: inherit;
+  top: 30px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border: solid #000;
+  border-width: 0 0 2px 2px;
+  transform: rotate(45deg);
+  pointer-events: none;
 }
-.teacher-voice { align-self: flex-start; background: #f2dfd3; }
-.teacher-voice::before { left: -11px; clip-path: polygon(0 15%, 100% 0, 100% 100%); }
-.teacher-reply { align-self: flex-end; background: #fff; border: 1px solid #ddd1c5; }
-.teacher-reply::before { right: -12px; background: #ddd1c5; clip-path: polygon(0 0, 100% 20%, 0 100%); }
+.teacher-voice { align-self: flex-start; }
+.teacher-voice::before { left: -9px; }
+.teacher-reply { align-self: flex-end; }
+.teacher-reply::before { right: -9px; transform: rotate(225deg); }
 .teacher-german, .teacher-czech, .teacher-example, .teacher-exercise-prompt {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.5;
 }
 .teacher-german { font-size: clamp(17px, 4.5vw, 22px); font-weight: 800; }
-.teacher-czech { font-size: 15px; color: #584a41; }
+.teacher-czech { font-size: 15px; }
 .teacher-thought {
   position: relative;
   align-self: flex-start;
   margin-left: clamp(12px, 8vw, 54px);
   max-width: calc(100% - 54px);
   padding: 29px clamp(25px, 7vw, 43px);
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 120' preserveAspectRatio='none'%3E%3Cpath fill='%23efe9f4' d='M22 29Q26 8 63 12Q83 -3 119 8Q150 -5 181 7Q212 -4 238 10Q271 4 285 21Q319 20 315 48Q329 65 312 80Q315 102 282 104Q260 121 227 111Q201 125 167 113Q138 124 104 112Q72 122 48 105Q14 109 15 86Q-6 77 7 57Q-1 37 22 29Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-3 -3 326 126' preserveAspectRatio='none'%3E%3Cpath fill='white' stroke='black' stroke-width='2' vector-effect='non-scaling-stroke' d='M22 29Q26 8 63 12Q83 -3 119 8Q150 -5 181 7Q212 -4 238 10Q271 4 285 21Q319 20 315 48Q329 65 312 80Q315 102 282 104Q260 121 227 111Q201 125 167 113Q138 124 104 112Q72 122 48 105Q14 109 15 86Q-6 77 7 57Q-1 37 22 29Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 .teacher-thought::before, .teacher-thought::after {
   content: '';
   position: absolute;
-  background: #efe9f4;
+  background: #fff;
+  border: 2px solid #000;
   border-radius: 50%;
 }
 .teacher-thought::before { width: 12px; height: 12px; left: -15px; top: 9px; }
 .teacher-thought::after { width: 7px; height: 7px; left: -27px; top: 0; }
 .teacher-button {
   font: 800 15px Nunito, system-ui;
-  background: #9b553b;
+  background: #000;
   color: white;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -79,14 +86,14 @@
   max-width: 100%;
   overflow-wrap: anywhere;
 }
-.teacher-button.secondary { background: white; color: var(--ink, #211e1a); border-color: #d7cbbf; }
+.teacher-button.secondary { background: #fff; color: #000; border-color: #000; }
 .teacher-button:disabled { opacity: .55; cursor: wait; }
-.teacher-button:focus-visible, #teacher-view textarea:focus-visible { outline: 2px solid #754830; outline-offset: 3px; }
+.teacher-button:focus-visible, #teacher-view textarea:focus-visible { outline: 2px solid #000; outline-offset: 3px; }
 #teacher-view textarea {
   display: block;
   width: 100%;
   min-width: 0;
-  border: 1px solid #c8b8a9;
+  border: 1px solid #000;
   border-radius: 18px;
   font: 17px Nunito, system-ui;
   padding: 12px;
@@ -103,7 +110,7 @@
   flex-wrap: wrap;
   gap: 6px;
   list-style: none;
-  background: #f7f0e9;
+  background: #eee;
   border-radius: 14px;
 }
 .teacher-order-tray li { background: #fff; border-radius: 10px; padding: 5px 8px; }

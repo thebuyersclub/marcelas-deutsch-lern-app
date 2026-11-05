@@ -117,16 +117,18 @@
  }
  function controls(parent){
   const help=node('div',undefined,'teacher-help');
-  help.append(button('Vorlesen',()=>speak(),true));
+  const readAloud=button('Přečíst nahlas',()=>speak(),true);
+  readAloud.lang='cs';
+  help.append(readAloud);
   for(const phrase of view.helpPhrases||[]){
-   const b=button(phrase.de,async()=>{
+   const b=button(phrase.cz||phrase.de,async()=>{
     if(['repeat','slower'].includes(phrase.effect)){
      await speak(phrase.effect==='slower');
      return;
     }
     await send('event',{type:'help',action:phrase.effect});
    },true);
-   b.title=phrase.cz||'';
+   if(phrase.cz)b.lang='cs';
    help.append(b);
   }
   const navigation=node('div',undefined,'teacher-lesson-navigation');

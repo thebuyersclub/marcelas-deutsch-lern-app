@@ -43,37 +43,130 @@
    speechEnd=null;if(audioURL){URL.revokeObjectURL(audioURL);audioURL=null;}if(seq!==speechGeneration)break;
   }}catch(error){if(seq===speechGeneration&&active())message(error.message);}
  }
- function bilingual(parent,text){if(text?.de)parent.append(node('p',text.de,'teacher-german'));if(text?.cz){const cz=node('p',text.cz,'teacher-czech');cz.lang='cs';parent.append(cz);}}
+ function dialogue(parent, text){
+  const scene=node('div',undefined,'teacher-dialogue');
+  if(text?.de)scene.append(node('p',text.de,'teacher-bubble teacher-voice teacher-german'));
+  if(text?.cz){
+   const thought=node('p',text.cz,'teacher-thought teacher-czech');
+   thought.lang='cs';
+   scene.append(thought);
+  }
+  parent.append(scene);
+  return scene;
+ }
+ function exerciseInput(parent, exercise){
+  if(exercise.prompt){
+   const prompt=node('p',exercise.prompt,'teacher-exercise-prompt');
+   if(['words','vocabulary','writing'].includes(exercise.mode))prompt.lang='cs';
+   parent.append(prompt);
+  }
+  if(['question','writing'].includes(exercise.mode)){
+   answerForm(parent, answer=>send('event',{type:'practice',answer}));
+   return;
+  }
+  if(!['words','sentences'].includes(exercise.mode)){
+   for(const item of exercise.items)parent.append(button(item.text,()=>send('event',{type:'practice',itemIds:[item.id]}),true));
+   return;
+  }
+  const selected=[];
+  const tray=node('ol',undefined,'teacher-order-tray');
+  tray.setAttribute('aria-label','Deine Reihenfolge');
+  tray.setAttribute('aria-live','polite');
+  const pool=node('div',undefined,'teacher-token-pool');
+  const undo=button('↶ Letztes entfernen',()=>{
+   selected.pop();
+   updateOrder();
+  },true);
+  const check=button('Reihenfolge prüfen →',()=>{
+   if(selected.length!==exercise.items.length){
+    message('Tippe zuerst alle Bausteine in deiner Reihenfolge an.');
+    return;
+   }
+   send('event',{type:'practice',itemIds:selected.map(item=>item.id)});
+  });
+  const tokens=exercise.items.map(item=>button(item.text,()=>{
+   if(selected.includes(item))return;
+   selected.push(item);
+   updateOrder();
+  },true));
+  function updateOrder(){
+   tray.replaceChildren(...selected.map(item=>node('li',item.text)));
+   tokens.forEach((token,index)=>token.setAttribute('aria-pressed',String(selected.includes(exercise.items[index]))));
+   message('');
+  }
+  pool.append(...tokens);
+  parent.append(tray,pool,undo,check);
+  if(exercise.mode==='sentences')parent.classList.add('teacher-sentence-order');
+ }
+ function answerForm(parent, submitAnswer){
+  const form=node('form'), label=node('label','Deine Antwort auf Deutsch'), answer=node('textarea');
+  answer.rows=3;
+  answer.maxLength=2000;
+  answer.autocomplete='off';
+  answer.id='teacher-answer';
+  label.htmlFor=answer.id;
+  const submit=button('Antwort prüfen →',()=>{});
+  submit.type='submit';
+  form.append(label,answer,submit);
+  form.onsubmit=event=>{
+   event.preventDefault();
+   if(answer.value.trim())submitAnswer(answer.value.trim());
+   else answer.focus();
+  };
+  parent.append(form);
+ }
+ function controls(parent){
+  const help=node('div',undefined,'teacher-help');
+  help.append(button('Vorlesen',()=>speak(),true));
+  for(const phrase of view.helpPhrases||[]){
+   const b=button(phrase.de,async()=>{
+    if(['repeat','slower'].includes(phrase.effect)){
+     await speak(phrase.effect==='slower');
+     return;
+    }
+    await send('event',{type:'help',action:phrase.effect});
+   },true);
+   b.title=phrase.cz||'';
+   help.append(b);
+  }
+  const navigation=node('div',undefined,'teacher-lesson-navigation');
+  navigation.append(button('← Pause',()=>leave('home'),true));
+  parent.append(navigation,help);
+ }
  const statusLabels={retained_later:'Später wieder selbstständig gekonnt',independent_now:'Heute selbstständig gekonnt',practised_with_help_or_recognition:'Mit Hilfe oder Auswahl geübt',observed_at_entry:'Beim Einstieg gelungen',needs_practice:'Weiter üben',not_observed:'Noch nicht geprüft'};
  function render(){
   const box=content();box.replaceChildren();document.getElementById('teacher-retry').replaceChildren();message('');
   if(!view||view.empty){box.append(node('p','Für dieses Konto ist noch kein Unterricht gespeichert.'));return;}
   box.append(node('div',view.title?.de||'Dein Unterricht','teacher-unit'));if(view.title?.cz){const sub=node('p',view.title.cz,'teacher-czech');sub.lang='cs';box.append(sub);}
   if(view.feedback){
-   const feedback=node('section',undefined,'teacher-card');bilingual(feedback,view.feedback);if(view.feedback.correction)feedback.append(node('p',view.feedback.correction,'teacher-example'));
-   feedback.append(button('Weiter',()=>{view.feedback=null;render();}));box.append(feedback);return;
+   const scene=dialogue(box,view.feedback);
+   const reply=node('section',undefined,'teacher-bubble teacher-reply');
+   if(view.feedback.correction)reply.append(node('p',view.feedback.correction,'teacher-example'));
+   reply.append(button('Weiter',()=>{view.feedback=null;render();}));
+   scene.append(reply);
+   return;
   }
   if(view.status==='paused'){
    box.append(node('p','Dein Unterricht ist gespeichert. Wir machen an derselben Stelle weiter.'));
    box.append(button('Fortsetzen',()=>send('event',{type:'resume'})));return;
   }
   if(view.status==='complete'){
-   bilingual(box,view.teacher);const list=node('ul');for(const goal of view.summary||[])list.append(node('li',(goal.label||goal.goalId)+': '+(statusLabels[goal.status]||'Noch nicht geprüft')));box.append(list);
+   dialogue(box,view.teacher);const list=node('ul');for(const goal of view.summary||[])list.append(node('li',(goal.label||goal.goalId)+': '+(statusLabels[goal.status]||'Noch nicht geprüft')));box.append(list);
    if(view.plan?.action==='none')box.append(node('p','Für heute ist keine weitere vorbereitete Einheit fällig. Unter Studieren kannst du weiterüben.'));
    else box.append(button('Nächster Unterricht',()=>send('next')));
    if(view.reviewDueAt){box.append(node('p','Spätere Wiederholung ab '+new Date(view.reviewDueAt).toLocaleString('de-AT')+'.','teacher-czech'));if(Date.now()>=Date.parse(view.reviewDueAt))box.append(button('Wiederholung beginnen',()=>send('review'),true));}
    box.append(button('Diese Einheit noch einmal',()=>send('restart'),true));return;
   }
-  const task=node('section',undefined,'teacher-card');bilingual(task,view.teacher);
-  task.append(button('Vorlesen',()=>speak(),true));
+  const scene=dialogue(box,view.teacher);
+  const task=node('section',undefined,'teacher-bubble teacher-reply');
   if(view.kind==='information')task.append(button('Weiter',()=>send('event',{type:'continue'})));
-  if(view.kind==='choice')for(const option of view.options||[])task.append(button(option.text||option.de||option.label||option.id,()=>send('event',{type:'choose',optionId:option.id})));
-  if(view.kind==='free_response'){
-   const form=node('form'),label=node('label','Deine Antwort auf Deutsch'),answer=node('textarea');answer.rows=3;answer.maxLength=2000;answer.autocomplete='off';answer.id='teacher-answer';label.htmlFor=answer.id;
-   form.append(label,answer);const submit=button('Antwort prüfen',()=>{});submit.type='submit';form.append(submit);form.onsubmit=event=>{event.preventDefault();if(answer.value.trim())send('event',{type:'answer',answer:answer.value.trim()});else answer.focus();};task.append(form);
+  if(view.kind==='choice'){
+   for(const option of view.options||[])task.append(button(option.text||option.de||option.label||option.id,()=>send('event',{type:'choose',optionId:option.id}),true));
   }
-  box.append(task);
-  const help=node('div',undefined,'teacher-help');for(const phrase of view.helpPhrases||[]){const b=button(phrase.de,async()=>{await send('event',{type:'help',action:phrase.effect});if(['repeat','slower'].includes(phrase.effect))speak(phrase.effect==='slower');},true);b.title=phrase.cz||'';help.append(b);}box.append(help);
+  if(view.kind==='free_response')answerForm(task,answer=>send('event',{type:'answer',answer}));
+  if(view.kind==='exercise')exerciseInput(task,view.exercise);
+  scene.append(task);
+  controls(box);
  }
  async function leave(target){
   if(busy)return;stopSpeech();stopClock();
@@ -86,7 +179,7 @@
  }
  function study(){if(active())return leave('study');window.stopTimer?.();window.goLearn();}
  function init(){
-  const style=node('style');style.textContent='#teacher-view{background:var(--cream,#fafaf7);color:var(--ink,#211e1a);font-family:Nunito,system-ui}#teacher-view .teacher-wrap{width:100%;max-width:640px;margin:0 auto;padding:calc(64px + env(safe-area-inset-top,0px)) 18px calc(30px + env(safe-area-inset-bottom));box-sizing:border-box}.teacher-nav{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.teacher-unit{font-size:23px;font-weight:900;margin-top:22px}.teacher-card{background:white;border-radius:20px;padding:22px;margin:20px 0;box-shadow:0 5px 24px #00000009}.teacher-german{font-size:21px;font-weight:800;line-height:1.5;white-space:pre-wrap}.teacher-czech{color:var(--ink3,#716b63);font-size:15px;line-height:1.5;white-space:pre-wrap}.teacher-button{font:800 15px Nunito,system-ui;background:var(--terra,#bd7758);color:white;border:0;border-radius:14px;padding:13px 18px;margin:6px 7px 6px 0;cursor:pointer;min-height:44px}.teacher-button.secondary{background:white;color:var(--ink,#211e1a);border:1px solid #ded8d0}.teacher-button:disabled{opacity:.55;cursor:wait}#teacher-view textarea{width:100%;box-sizing:border-box;border:1px solid #d7cfc4;border-radius:12px;font:18px Nunito,system-ui;padding:12px;margin:10px 0;resize:vertical}#teacher-view label{display:block;margin-top:20px;font-weight:800}.teacher-example{font-size:19px;font-weight:800}.teacher-help{margin-top:18px}#teacher-status{min-height:24px;line-height:1.5}#teacher-content li{padding:7px 0;line-height:1.5}';document.head.append(style);
+
   const page=node('div',undefined,'view');page.id='teacher-view';const wrap=node('div',undefined,'teacher-wrap'),nav=node('nav',undefined,'teacher-nav');nav.append(button('Startseite',()=>leave('home'),true),button('Studieren',()=>leave('study'),true));const title=node('h1','Deine Deutschlehrerin'),box=node('main');box.id='teacher-content';const status=node('p');status.id='teacher-status';status.setAttribute('role','status');const retry=node('div');retry.id='teacher-retry';wrap.append(nav,title,box,status,retry);page.append(wrap);document.body.append(page);
   new MutationObserver(()=>{if(!active()){stopSpeech();stopClock();}}).observe(page,{attributes:true,attributeFilter:['class']});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){stopSpeech();stopClock();}else syncClock();});

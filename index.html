@@ -2456,7 +2456,7 @@ function startModeSelect() {
   if (total === 0) { showToast('Zuerst Inhalte hinzufügen!', 'err'); return; }
 
   const dis = (id, ok) => { const el = document.getElementById('mode-' + id); if (el) el.classList.toggle('disabled', !ok); };
-  dis('flashcard', hasVocab || hasSent);
+  dis('flashcard', hasVocab);
   dis('mc', hasVocab);
   dis('order', hasOrder);
   dis('sentorder', hasSentenceOrder);
@@ -2519,7 +2519,7 @@ function startPractice(mode) {
 
   if (mode === 'flashcard' || mode === 'typing') {
     (ch.vocab||[]).forEach(v => items.push({ ptype: 'vocab', ...v }));
-    (ch.sentences||[]).forEach(s => items.push({ ptype: 'sentence', ...s }));
+    if(mode==='typing') (ch.sentences||[]).forEach(s => items.push({ ptype: 'sentence', ...s }));
   } else if (mode === 'mc') {
     (ch.vocab||[]).forEach(v => items.push({ ptype: 'vocab', ...v }));
   } else if (mode === 'order') {
@@ -4321,7 +4321,7 @@ function strictItemsForPractice(ch, mode, lessonName) {
   let items = [];
   if (mode === 'flashcard' || mode === 'typing') {
     (ch.vocab||[]).forEach(v => items.push({ ptype: 'vocab', ...v }));
-    (ch.sentences||[]).forEach(s => items.push({ ptype: 'sentence', ...s }));
+    if(mode==='typing') (ch.sentences||[]).forEach(s => items.push({ ptype: 'sentence', ...s }));
   } else if (mode === 'sentences') {
     (ch.sentences||[]).forEach(s => items.push({ ptype: 'sentence', ...s }));
     items = filterByLesson(items, lessonName);
@@ -4549,7 +4549,7 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
 
   window.getItemsForLessonMode = function(mode) {
     const ch = getCh(); if (!ch) return [];
-    if (mode === 'flashcard') return [...(ch.vocab||[]).map(v=>({ptype:'vocab',...v})), ...(ch.sentences||[]).map(s=>({ptype:'sentence',...s}))];
+    if (mode === 'flashcard') return (ch.vocab||[]).map(v=>({ptype:'vocab',...v}));
     if (mode === 'mc') return (ch.vocab||[]).map(v=>({ptype:'vocab',...v}));
     if (mode === 'sentences') return (ch.sentences||[]).map(s=>({ptype:'sentence',...s}));
     if (mode === 'order') return (ch.lessons||[]).filter(l=>l.type==='order').map(l=>({ptype:'order',...l}));
@@ -4630,7 +4630,7 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
     let items = [];
     if (mode === 'flashcard' || mode === 'typing') {
       (ch.vocab||[]).forEach(v=>items.push({ptype:'vocab',...v}));
-      (ch.sentences||[]).forEach(s=>items.push({ptype:'sentence',...s}));
+      if(mode==='typing') (ch.sentences||[]).forEach(s=>items.push({ptype:'sentence',...s}));
       if (lessonName) items = items.filter(item=>lName(item)===lessonName);
     } else if (mode === 'mc') {
       (ch.vocab||[]).forEach(v=>items.push({ptype:'vocab',...v}));
@@ -4688,7 +4688,7 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
     const ch = getCh();
     if (ch) {
       const dis = (id, ok) => { const el = document.getElementById('mode-' + id); if (el) el.classList.toggle('disabled', !ok); };
-      dis('flashcard',(ch.vocab||[]).length>0 || (ch.sentences||[]).length>0);
+      dis('flashcard',(ch.vocab||[]).length>0);
       dis('mc',(ch.vocab||[]).length>0);
       dis('sentences',(ch.sentences||[]).length>0);
       dis('typing',(ch.vocab||[]).length>0 || (ch.sentences||[]).length>0);
@@ -4850,7 +4850,7 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
     const hasWeak = _cache && _cache.weak && Object.keys(_cache.weak).length > 0;
     const hasAny = hasChapterPracticeContent(ch);
     const dis = (id, ok) => { const el = byId('mode-' + id); if (el) el.classList.toggle('disabled', !ok); };
-    dis('flashcard', hasVocab || hasSent); dis('mc', hasVocab); dis('sentences', hasSent);
+    dis('flashcard', hasVocab); dis('mc', hasVocab); dis('sentences', hasSent);
     dis('order', hasOrder); dis('sentorder', hasSentenceOrder); dis('fill', hasFill); dis('qa', hasQA);
     dis('typing', hasVocab || hasSent); dis('clock', true); dis('grammar', hasGrammar); dis('weak', hasWeak);
     const lessonCard = forceEnsureLessonCheckCard(); if (lessonCard) lessonCard.classList.toggle('disabled', !hasAny);
@@ -5123,12 +5123,12 @@ Ziel:
   window.renderLearnList=stableRenderLearnList;
   function ensureLessonSelectViewStable(){ if(byId('lesson-select'))return; var mode=byId('mode-select'); if(!mode||!mode.parentNode)return; var view=document.createElement('div'); view.className='view'; view.id='lesson-select'; view.innerHTML='<div class="navbar"><button class="btn-back" type="button" data-action="back-mode"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Zurück</button><span class="navbar-title" id="lesson-select-title">Lektion wählen</span><span></span></div><div class="scroll"><div style="padding:16px 16px 90px" id="lesson-select-list"></div></div>'; mode.insertAdjacentElement('afterend',view); }
   function setCardState(id,ok){ var el=byId('mode-'+id); if(!el)return; el.classList.toggle('disabled',!ok); el.style.pointerEvents=ok?'auto':''; }
-  function stableStartModeSelect(){ var ch=currentChapter(); if(!ch){ toast('Bitte zuerst ein Kapitel auswählen.'); stableOpenLearnHome(); return; } ensureLessonSelectViewStable(); var hasVocab=arr(ch.vocab).length>0,hasSent=arr(ch.sentences).length>0,hasOrder=arr(ch.lessons).some(function(l){return l&&l.type==='order';}),hasSentOrder=arr(ch.lessons).some(function(l){return l&&l.type==='sentence-order';}),hasFill=arr(ch.lessons).some(function(l){return l&&l.type==='fill';}),hasQA=arr(ch.lessons).some(function(l){return l&&l.type==='qa';}),hasGrammar=arr(ch.grammar).length>0||arr(ch.grammarTables).length>0,hasWeak=cache().weak&&Object.keys(cache().weak).length>0; setCardState('flashcard',hasVocab||hasSent); setCardState('mc',hasVocab); setCardState('order',hasOrder); setCardState('sentorder',hasSentOrder); setCardState('fill',hasFill); setCardState('typing',hasVocab||hasSent); setCardState('qa',hasQA); setCardState('clock',true); setCardState('grammar',hasGrammar); setCardState('weak',hasWeak); setCardState('lessoncheck',hasAnyPracticeContent(ch)); var lc=byId('mode-lessoncheck'); if(lc)lc.setAttribute('data-action','lesson-check'); var hint=byId('mode-hint'); if(hint)hint.textContent=hasAnyPracticeContent(ch)?'':'Füge zuerst Inhalte in diesem Kapitel hinzu.'; if(typeof updateWeakCount==='function')updateWeakCount(); show('mode-select'); }
+  function stableStartModeSelect(){ var ch=currentChapter(); if(!ch){ toast('Bitte zuerst ein Kapitel auswählen.'); stableOpenLearnHome(); return; } ensureLessonSelectViewStable(); var hasVocab=arr(ch.vocab).length>0,hasSent=arr(ch.sentences).length>0,hasOrder=arr(ch.lessons).some(function(l){return l&&l.type==='order';}),hasSentOrder=arr(ch.lessons).some(function(l){return l&&l.type==='sentence-order';}),hasFill=arr(ch.lessons).some(function(l){return l&&l.type==='fill';}),hasQA=arr(ch.lessons).some(function(l){return l&&l.type==='qa';}),hasGrammar=arr(ch.grammar).length>0||arr(ch.grammarTables).length>0,hasWeak=cache().weak&&Object.keys(cache().weak).length>0; setCardState('flashcard',hasVocab); setCardState('mc',hasVocab); setCardState('order',hasOrder); setCardState('sentorder',hasSentOrder); setCardState('fill',hasFill); setCardState('typing',hasVocab||hasSent); setCardState('qa',hasQA); setCardState('clock',true); setCardState('grammar',hasGrammar); setCardState('weak',hasWeak); setCardState('lessoncheck',hasAnyPracticeContent(ch)); var lc=byId('mode-lessoncheck'); if(lc)lc.setAttribute('data-action','lesson-check'); var hint=byId('mode-hint'); if(hint)hint.textContent=hasAnyPracticeContent(ch)?'':'Füge zuerst Inhalte in diesem Kapitel hinzu.'; if(typeof updateWeakCount==='function')updateWeakCount(); show('mode-select'); }
   window.startModeSelect=stableStartModeSelect;
   function lessonNamesForMode(ch,mode){ if(mode==='flashcard'||mode==='mc'||mode==='typing')return[]; var typeMap={order:'order',sentorder:'sentence-order',fill:'fill',qa:'qa'},type=typeMap[mode]; if(!type)return[]; var names=[]; arr(ch.lessons).forEach(function(l){ if(l&&l.type===type){ var n=l.lessonName||l.lesson||l.name||'Standard'; if(names.indexOf(n)===-1)names.push(n); } }); return names; }
   function stableOpenLessonSelect(mode){ var ch=currentChapter(); if(!ch)return stableStartModeSelect(); ensureLessonSelectViewStable(); var title=byId('lesson-select-title'),list=byId('lesson-select-list'); if(title)title.textContent='Lektion wählen'; if(!list)return; var names=lessonNamesForMode(ch,mode); if(!names.length){ stableStartPractice(mode,null); return; } var html='<div class="ch-card" data-action="start-practice" data-mode="'+escText(mode)+'" data-lesson=""><div class="ch-body"><div class="ch-name">Alle gemeinsam</div><div class="ch-meta">Alle passenden Inhalte gemischt</div></div><div class="ch-arr">›</div></div>'; names.forEach(function(n){ html+='<div class="ch-card" data-action="start-practice" data-mode="'+escText(mode)+'" data-lesson="'+escText(n)+'"><div class="ch-body"><div class="ch-name">'+escText(n)+'</div><div class="ch-meta">Diese Lektion üben</div></div><div class="ch-arr">›</div></div>'; }); list.innerHTML=html; show('lesson-select'); }
   window.openLessonSelect=stableOpenLessonSelect;
-  function itemsForPractice(ch,mode,lessonName){ if(typeof strictItemsForPractice==='function'){ try{ var strict=strictItemsForPractice(ch,mode,lessonName||null); if(arr(strict).length)return strict; }catch(e){} } var items=[]; if(mode==='flashcard'||mode==='typing'){ arr(ch.vocab).forEach(function(v){items.push(Object.assign({ptype:'vocab'},v));}); arr(ch.sentences).forEach(function(s){items.push(Object.assign({ptype:'sentence'},s));}); } else if(mode==='mc'){ arr(ch.vocab).forEach(function(v){items.push(Object.assign({ptype:'vocab'},v));}); } else if(mode==='order'){ arr(ch.lessons).filter(function(l){return l&&l.type==='order';}).forEach(function(l){items.push(Object.assign({ptype:'order'},l));}); } else if(mode==='sentorder'){ arr(ch.lessons).filter(function(l){return l&&l.type==='sentence-order';}).forEach(function(l){items.push(Object.assign({ptype:'sentorder'},l));}); } else if(mode==='fill'){ arr(ch.lessons).filter(function(l){return l&&l.type==='fill';}).forEach(function(l){items.push(Object.assign({ptype:'fill'},l));}); } else if(mode==='qa'){ arr(ch.lessons).filter(function(l){return l&&l.type==='qa';}).forEach(function(l){items.push(Object.assign({ptype:'qa'},l));}); } else if(mode==='clock'){ for(var i=0;i<20;i++)items.push({ptype:'clock',hours:Math.floor(Math.random()*24),minutes:Math.floor(Math.random()*60)}); } if(lessonName)items=items.filter(function(i){return(i.lessonName||i.lesson||i.name||'Standard')===lessonName;}); return items; }
+  function itemsForPractice(ch,mode,lessonName){ if(typeof strictItemsForPractice==='function'){ try{ var strict=strictItemsForPractice(ch,mode,lessonName||null); if(arr(strict).length)return strict; }catch(e){} } var items=[]; if(mode==='flashcard'||mode==='typing'){ arr(ch.vocab).forEach(function(v){items.push(Object.assign({ptype:'vocab'},v));}); if(mode==='typing') arr(ch.sentences).forEach(function(s){items.push(Object.assign({ptype:'sentence'},s));}); } else if(mode==='mc'){ arr(ch.vocab).forEach(function(v){items.push(Object.assign({ptype:'vocab'},v));}); } else if(mode==='order'){ arr(ch.lessons).filter(function(l){return l&&l.type==='order';}).forEach(function(l){items.push(Object.assign({ptype:'order'},l));}); } else if(mode==='sentorder'){ arr(ch.lessons).filter(function(l){return l&&l.type==='sentence-order';}).forEach(function(l){items.push(Object.assign({ptype:'sentorder'},l));}); } else if(mode==='fill'){ arr(ch.lessons).filter(function(l){return l&&l.type==='fill';}).forEach(function(l){items.push(Object.assign({ptype:'fill'},l));}); } else if(mode==='qa'){ arr(ch.lessons).filter(function(l){return l&&l.type==='qa';}).forEach(function(l){items.push(Object.assign({ptype:'qa'},l));}); } else if(mode==='clock'){ for(var i=0;i<20;i++)items.push({ptype:'clock',hours:Math.floor(Math.random()*24),minutes:Math.floor(Math.random()*60)}); } if(lessonName)items=items.filter(function(i){return(i.lessonName||i.lesson||i.name||'Standard')===lessonName;}); return items; }
   function stableStartPractice(mode,lessonName){ var ch=currentChapter(); if(!ch)return stableStartModeSelect(); var items=itemsForPractice(ch,mode,lessonName||null); if(!items.length){ toast('Keine Inhalte für diesen Modus!'); return; } items=items.map(function(item){ if(item.ptype!=='vocab'&&item.ptype!=='sentence')return item; var d=(typeof _dir!=='undefined')?_dir:'cz-de'; if(d==='mixed')d=Math.random()<0.5?'cz-de':'de-cz'; return Object.assign({},item,{_dir:d}); }); var strictMode=['order','sentorder','fill'].indexOf(mode)!==-1; try{_strictLessonSequenceActive=strictMode;}catch(e){} var deck=strictMode?items.slice():items.slice().sort(function(){return Math.random()-0.5;}); _pAllItems=deck; _pChunkStart=0; _pQ=deck.slice(0,20); _pI=0; _pScore=0; _pMode=mode; _pFlipped=false; _mistakeCount=0; _motivIdx=0; _pRound=1; _pOrigItems=_pQ.slice(); _pTotalScore=0; _pTotalCards=0; var labels={flashcard:'Karteikarte',mc:'Multiple Choice',order:'Satzbau',sentorder:'Satz-Reihenfolge',fill:'Lückentext',typing:'Schreiben',qa:'Frage-Antwort',clock:'Uhrzeit'}; var dirLabel=(typeof _dir!=='undefined')?(_dir==='cz-de'?'🇨🇿→🇦🇹':_dir==='de-cz'?'🇦🇹→🇨🇿':'↔'):''; if(typeof setPracticeModeTitle==='function')setPracticeModeTitle((labels[mode]||mode)+(dirLabel?' · '+dirLabel:''),(typeof practiceModeCzLabel==='function')?practiceModeCzLabel(mode):''); if(typeof startTimer==='function')startTimer(); show('practice'); if(typeof refreshTimers==='function')refreshTimers(); if(typeof renderCard==='function')renderCard(); }
   window.startPractice=stableStartPractice;
   function fallbackLessonItems(ch){ var out=[]; arr(ch.vocab).forEach(function(v){out.push(Object.assign({ptype:'vocab',_lcMode:'flashcard',_dir:'cz-de'},v));}); arr(ch.vocab).forEach(function(v){out.push(Object.assign({ptype:'vocab',_lcMode:'mc',_dir:'cz-de'},v));}); arr(ch.sentences).forEach(function(s){out.push(Object.assign({ptype:'sentence',_lcMode:'typing',_dir:'cz-de'},s));}); arr(ch.lessons).forEach(function(l){ if(!l)return; if(l.type==='order')out.push(Object.assign({ptype:'order',_lcMode:'order'},l)); if(l.type==='sentence-order')out.push(Object.assign({ptype:'sentorder',_lcMode:'sentorder'},l)); if(l.type==='fill')out.push(Object.assign({ptype:'fill',_lcMode:'fill'},l)); if(l.type==='qa')out.push(Object.assign({ptype:'qa',_lcMode:'qa'},l)); }); arr(ch.grammarTables).forEach(function(t){out.push(Object.assign({ptype:'gtable',_lcMode:'gtable'},t));}); if(!out.length&&typeof lessonCheckBuildClockItems==='function')out=lessonCheckBuildClockItems(8); return out; }
@@ -5423,7 +5423,7 @@ Ziel:
     const out = [];
     if(mode === 'flashcard' || mode === 'typing') {
       arr(ch.vocab).forEach(function(v){ out.push(Object.assign({ptype:'vocab'}, v)); });
-      arr(ch.sentences).forEach(function(s){ out.push(Object.assign({ptype:'sentence'}, s)); });
+      if(mode==='typing') arr(ch.sentences).forEach(function(s){ out.push(Object.assign({ptype:'sentence'}, s)); });
     } else if(mode === 'mc') {
       arr(ch.vocab).forEach(function(v){ out.push(Object.assign({ptype:'vocab'}, v)); });
     } else if(mode === 'sentences') {
@@ -5536,7 +5536,7 @@ Ziel:
     const ch = currentChapter();
     if(ch){
       const dis = function(id, ok){ const el = byId('mode-' + id); if(el) el.classList.toggle('disabled', !ok); };
-      dis('flashcard', arr(ch.vocab).length || arr(ch.sentences).length);
+      dis('flashcard', arr(ch.vocab).length);
       dis('mc', arr(ch.vocab).length);
       dis('sentences', arr(ch.sentences).length);
       dis('order', arr(ch.lessons).some(function(l){ return l.type === 'order'; }));
@@ -5774,7 +5774,7 @@ Renderer und vorhandene Views bleiben erhalten.
     var out=[];
     if(mode==='flashcard' || mode==='typing'){
       arr(ch.vocab).forEach(function(v){ if(v && v.de && v.cz) out.push(Object.assign({ptype:'vocab',_chapterId:ch.id,_chapterName:ch.name},v)); });
-      arr(ch.sentences).forEach(function(s){ if(s && s.de && s.cz) out.push(Object.assign({ptype:'sentence',_chapterId:ch.id,_chapterName:ch.name},s)); });
+      if(mode==='typing') arr(ch.sentences).forEach(function(s){ if(s && s.de && s.cz) out.push(Object.assign({ptype:'sentence',_chapterId:ch.id,_chapterName:ch.name},s)); });
     } else if(mode==='sentences'){
       arr(ch.sentences).forEach(function(s){ if(s && s.de && s.cz) out.push(Object.assign({ptype:'sentence',_chapterId:ch.id,_chapterName:ch.name},s)); });
     } else if(mode==='mc'){
@@ -5793,7 +5793,7 @@ Renderer und vorhandene Views bleiben erhalten.
   }
   function availableModes(ch){
     return {
-      flashcard: arr(ch&&ch.vocab).length || arr(ch&&ch.sentences).length,
+      flashcard: arr(ch&&ch.vocab).length,
       mc: arr(ch&&ch.vocab).length,
       sentences: arr(ch&&ch.sentences).length,
       order: arr(ch&&ch.lessons).some(function(l){return normalizeLessonType(l&&l.type)==='order';}),
@@ -5958,7 +5958,7 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
     var out=[]; if(!ch)return out;
     if(mode==='flashcard'||mode==='typing'){
       arr(ch.vocab).forEach(function(v){var p=pair(v);if(p.de&&p.cz)out.push(wp(v,{ptype:'vocab',_chapterId:ch.id,_chapterName:ch.name}));});
-      arr(ch.sentences).forEach(function(s){var p=pair(s);if(p.de&&p.cz)out.push(wp(s,{ptype:'sentence',_chapterId:ch.id,_chapterName:ch.name}));});
+      if(mode==='typing') arr(ch.sentences).forEach(function(s){var p=pair(s);if(p.de&&p.cz)out.push(wp(s,{ptype:'sentence',_chapterId:ch.id,_chapterName:ch.name}));});
     }else if(mode==='sentences'){
       arr(ch.sentences).forEach(function(s){var p=pair(s);if(p.de&&p.cz)out.push(wp(s,{ptype:'sentence',_chapterId:ch.id,_chapterName:ch.name,_sentenceMode:true}));});
     }else if(mode==='mc'){
@@ -6112,7 +6112,7 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
   const oldAddLesson=window.addLesson; window.addLesson=function(){ const ch=getCurrentChapter(); if(!ch)return; const before=arr(ch.lessons).length, lesson=val('lesson-lesson')||STANDARD_LESSON; const r=oldAddLesson?oldAddLesson.apply(this,arguments):undefined; arr(ch.lessons).slice(before).forEach(l=>{l.chapterId=ch.id;setLessonName(l,lesson);l.type=normalizeType(l.type);}); saveDb(); setVal('lesson-lesson',lesson); renderAllAdminLists(); return r; };
 
   /* Übungsmodus: Inhalte bleiben kapitelgebunden, Prüfungssimulation sammelt alle Kapitel. */
-  function itemsForMode(ch,mode){ let out=[]; if(!ch)return out; if(mode==='flashcard'||mode==='typing'){ arr(ch.vocab).forEach(v=>out.push(Object.assign({ptype:'vocab',_chapterId:ch.id,_chapterName:ch.name},normalizePair(v)))); arr(ch.sentences).forEach(s=>out.push(Object.assign({ptype:'sentence',_chapterId:ch.id,_chapterName:ch.name},normalizePair(s)))); } else if(mode==='sentences')arr(ch.sentences).forEach(s=>out.push(Object.assign({ptype:'sentence',_chapterId:ch.id,_chapterName:ch.name},normalizePair(s)))); else if(mode==='mc')arr(ch.vocab).forEach(v=>out.push(Object.assign({ptype:'vocab',_chapterId:ch.id,_chapterName:ch.name},normalizePair(v)))); else if(mode==='grammar'){ arr(ch.grammar).forEach(g=>out.push(Object.assign({ptype:'grammar',_chapterId:ch.id,_chapterName:ch.name},g))); arr(ch.grammarTables).forEach(g=>out.push(Object.assign({ptype:'gtable',_chapterId:ch.id,_chapterName:ch.name},g))); } else if(mode==='clock'){ for(let i=0;i<20;i++)out.push({ptype:'clock',_lcMode:'clock',lessonName:STANDARD_LESSON,hours:Math.floor(Math.random()*24),minutes:Math.floor(Math.random()*60)}); } else { const want=LESSON_TYPE_MAP[mode]; arr(ch.lessons).forEach(l=>{ if(normalizeType(l.type)===want)out.push(Object.assign({ptype:mode,_chapterId:ch.id,_chapterName:ch.name},l)); }); } return out.map(x=>setLessonName(x,lessonNameOf(x))).filter(x=>mode==='clock'||['grammar','gtable','order','sentorder','fill','qa'].indexOf(x.ptype)>=0||(x.de&&x.cz)); }
+  function itemsForMode(ch,mode){ let out=[]; if(!ch)return out; if(mode==='flashcard'||mode==='typing'){ arr(ch.vocab).forEach(v=>out.push(Object.assign({ptype:'vocab',_chapterId:ch.id,_chapterName:ch.name},normalizePair(v)))); if(mode==='typing') arr(ch.sentences).forEach(s=>out.push(Object.assign({ptype:'sentence',_chapterId:ch.id,_chapterName:ch.name},normalizePair(s)))); } else if(mode==='sentences')arr(ch.sentences).forEach(s=>out.push(Object.assign({ptype:'sentence',_chapterId:ch.id,_chapterName:ch.name},normalizePair(s)))); else if(mode==='mc')arr(ch.vocab).forEach(v=>out.push(Object.assign({ptype:'vocab',_chapterId:ch.id,_chapterName:ch.name},normalizePair(v)))); else if(mode==='grammar'){ arr(ch.grammar).forEach(g=>out.push(Object.assign({ptype:'grammar',_chapterId:ch.id,_chapterName:ch.name},g))); arr(ch.grammarTables).forEach(g=>out.push(Object.assign({ptype:'gtable',_chapterId:ch.id,_chapterName:ch.name},g))); } else if(mode==='clock'){ for(let i=0;i<20;i++)out.push({ptype:'clock',_lcMode:'clock',lessonName:STANDARD_LESSON,hours:Math.floor(Math.random()*24),minutes:Math.floor(Math.random()*60)}); } else { const want=LESSON_TYPE_MAP[mode]; arr(ch.lessons).forEach(l=>{ if(normalizeType(l.type)===want)out.push(Object.assign({ptype:mode,_chapterId:ch.id,_chapterName:ch.name},l)); }); } return out.map(x=>setLessonName(x,lessonNameOf(x))).filter(x=>mode==='clock'||['grammar','gtable','order','sentorder','fill','qa'].indexOf(x.ptype)>=0||(x.de&&x.cz)); }
   window.__targetFixBuildModeItems=itemsForMode; window.__seniorItemsForMode=itemsForMode;
   function ensureLessonSelectView(){ if(byId('lesson-select'))return; const mode=byId('mode-select'); if(!mode)return; const v=document.createElement('div'); v.className='view'; v.id='lesson-select'; v.innerHTML='<div class="navbar"><button class="btn-back" type="button" onclick="startModeSelect()">‹ Zurück</button><span class="navbar-title" id="lesson-select-title">Lektion wählen</span><span></span></div><div class="scroll"><div style="padding:16px 16px 90px" id="lesson-select-list"></div></div>'; mode.insertAdjacentElement('afterend',v); }
   window.openLessonSelect=function(mode){ normalizeApp(); const ch=getCurrentChapter(); if(!ch){toast('Bitte zuerst ein Kapitel auswählen.');return;} ensureLessonSelectView(); const all=itemsForMode(ch,mode); if(!all.length){toast('Keine Inhalte für diesen Modus.','err');return;} const names=[STANDARD_LESSON]; all.forEach(i=>{const n=lessonNameOf(i); if(n!==STANDARD_LESSON&&names.indexOf(n)<0)names.push(n);}); const title=byId('lesson-select-title'); if(title)title.textContent=(MODE_LABELS[mode]||mode)+' · Lektion wählen'; const list=byId('lesson-select-list'); if(!list)return; list.innerHTML='<div class="ch-card" data-senior-final-start="1" data-mode="'+html(mode)+'" data-lesson=""><div class="ch-body"><div class="ch-name">Alle gemeinsam</div><div class="ch-meta">'+all.length+' passende Einträge</div></div><div class="ch-arr">›</div></div>'+names.map(n=>{const cnt=all.filter(i=>lessonNameOf(i)===n).length; return '<div class="ch-card" data-senior-final-start="1" data-mode="'+html(mode)+'" data-lesson="'+html(n)+'"><div class="ch-body"><div class="ch-name">'+html(n)+'</div><div class="ch-meta">'+cnt+' Einträge</div></div><div class="ch-arr">›</div></div>';}).join(''); show('lesson-select'); };

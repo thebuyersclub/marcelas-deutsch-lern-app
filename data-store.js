@@ -202,6 +202,7 @@
   async function addEntry(type,de,cz,example='',chapterId){
     if(!chapterId||!baseChapters(_cache).some(ch=>ch.id===chapterId))throw new Error('Bitte zuerst ein gültiges Kapitel wählen.');
     de=de.trim();cz=cz.trim();example=example.trim();
+    if(type==='vocab'&&(/[!?]$/.test(de)||/\b(ich|du|wir|ihr|sie)\s+(bin|bist|ist|sind|seid|habe|hast|hat|haben|habt|wohne|wohnst|wohnt|wohnen|heiße|heißt|heißen)\b/i.test(de)))type='sentence';
     if(!['vocab','sentence'].includes(type)||!de||!cz||de.length>2000||cz.length>2000||example.length>4000)throw new Error('Bitte gültige deutsche und tschechische Texte eingeben.');
     const id=crypto.randomUUID();
     await request(':commit',{method:'POST',body:JSON.stringify({writes:[{

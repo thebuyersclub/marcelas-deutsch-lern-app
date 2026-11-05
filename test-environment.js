@@ -2,6 +2,7 @@
   'use strict';
   const config = window.MARCELA_CONFIG || {};
   function ready() {
+    if(config.provider==='supabase')return ['test','production'].includes(config.environment)&&config.supabaseProjectId==='erqtcjeyhfcuyppwlinw'&&config.supabaseUrl==='https://erqtcjeyhfcuyppwlinw.supabase.co'&&Boolean(config.supabasePublishableKey);
     return ['test','production'].includes(config.environment) &&
       config.firebaseProjectId === 'marcela-deutsch-test' &&
       Boolean(config.firebaseApiKey);

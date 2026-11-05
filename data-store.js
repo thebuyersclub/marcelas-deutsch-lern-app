@@ -24,6 +24,7 @@
     box.textContent=message;box.style.color=error?'#b42318':'#176b3a';
   }
   async function request(path,options={},missingAllowed=false) {
+    if(config.provider==='supabase')return window.marcelaSupabaseTransport.request(path,options,missingAllowed);
     if(!window.marcelaTestEnvironment.ready() || !user()?.verified) throw new Error('Bitte zuerst mit bestätigtem Konto anmelden.');
     const response=await fetch(base+path,{...options,headers:{'Content-Type':'application/json',...await window.marcelaAuth.headers(),...options.headers},signal:AbortSignal.timeout(15000)});
     if(missingAllowed&&response.status===404)return null;
@@ -35,7 +36,7 @@
     }
     return result;
   }
-  function progressOf(data){return {stats:data.stats||{},streak:data.streak||0,weak:data.weak||{},examRecords:data.examRecords||{},resets:data.resets||{},legacyImported:data.legacyImported===true};}
+  function progressOf(data){return {stats:data.stats||{},streak:data.streak||0,weak:data.weak||{},examRecords:data.examRecords||{},resets:data.resets||{},legacyImported:data.legacyImported===true,...(data._migration?{_migration:data._migration}:{})};}
   function mergeProgress(remote,baseline,local){
     const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
     function merge(r,b,l){
@@ -139,7 +140,7 @@
       if(pending.progressClient){progressClient=pending.progressClient;progressSequence=Math.max(progressSequence,pending.progressSequence||0);progressAck=pending.progressBase||progressAck;progressAckSequence=pending.progressBaseSequence||0;}
       // Lokale Änderungen behalten. Ein Konflikt wird niemals automatisch überschrieben.
       personal=pending.progress;
-      if(user().role==='admin')chapters=pending.chapters;
+      if(config.provider!=='supabase'&&user().role==='admin')chapters=pending.chapters;
       dirty=true;conflicted=user().role==='admin'&&pending.baseVersion!==baseVersion&&JSON.stringify(pending.chapters)!==baseSignature;
       status(conflicted?'Lokale Änderungen und Cloud-Stand unterscheiden sich. Bitte vor weiteren Änderungen abgleichen.':'Es gibt noch nicht übertragene Änderungen auf diesem Gerät.',true);
     }
@@ -151,7 +152,8 @@
   async function persistSnapshot(snapshot){
     const sig=JSON.stringify(snapshot.chapters),psig=JSON.stringify(snapshot.progress);
     // Ohne Adminrolle gibt es keinen Schreibaufruf auf gemeinsame Inhalte.
-    if(user().role==='admin'&&sig!==baseSignature){
+    if(config.provider==='supabase'&&sig!==baseSignature)throw new Error('Gemeinsame Lerninhalte werden ausschließlich in Google Sheets bearbeitet.');
+    if(config.provider!=='supabase'&&user().role==='admin'&&sig!==baseSignature){
       const condition=baseVersion?'currentDocument.updateTime='+encodeURIComponent(baseVersion):'currentDocument.exists=false';
       const result=await request('/app/data?'+condition,{method:'PATCH',body:JSON.stringify({fields:{chapters:{stringValue:sig}}})});
       baseVersion=result.updateTime;baseSignature=sig;
@@ -193,7 +195,7 @@
     baseVersion=remote.doc?.updateTime||null;baseSignature=sig;conflicted=false;
     return save(_cache);
   }
-  function localBackup(){return {savedAt:new Date().toISOString(),projectId:config.firebaseProjectId,data:clone(_cache),pending:JSON.parse(localStorage.getItem(pendingKey())||'null')};}
+  function localBackup(){return {savedAt:new Date().toISOString(),projectId:config.supabaseProjectId||config.firebaseProjectId,data:clone(_cache),pending:JSON.parse(localStorage.getItem(pendingKey())||'null')};}
   async function addEntry(type,de,cz,example=''){
     de=de.trim();cz=cz.trim();example=example.trim();
     if(!['vocab','sentence'].includes(type)||!de||!cz||de.length>2000||cz.length>2000||example.length>4000)throw new Error('Bitte gültige deutsche und tschechische Texte eingeben.');
@@ -250,7 +252,7 @@
     const merged=[...current.chapters,...additions];
     await request('/app/data?currentDocument.updateTime='+encodeURIComponent(current.doc.updateTime),{method:'PATCH',body:JSON.stringify({fields:{chapters:{stringValue:JSON.stringify(merged)}}})});
     const check=await getBase();
-    if(JSON.stringify(check.chapters)!==JSON.stringify(merged))throw new Error('Die Kontrolle nach dem Import ist fehlgeschlagen. Bitte Lerninhalte sichern und prüfen.');
+    if(config.provider==='supabase'?!(await window.marcelaSupabaseTransport.contentMatches(merged)):JSON.stringify(check.chapters)!==JSON.stringify(merged))throw new Error('Die Kontrolle nach dem Import ist fehlgeschlagen. Bitte Lerninhalte sichern und prüfen.');
     await load();window.renderAdminList();
     status('Sonderkapitel gespeichert und geprüft: '+additions.length+' neue Kapitel.');
     return additions.length;
@@ -274,7 +276,7 @@
   async function exportContent(){
     if(user()?.role!=='admin')throw new Error('Nur für die Administration verfügbar.');
     const [shared,additions,stats]=await Promise.all([getBase(),listAdditions(),request('/app/stats',{},true)]);
-    return {exportedAt:new Date().toISOString(),projectId:config.firebaseProjectId,
+    return {exportedAt:new Date().toISOString(),projectId:config.supabaseProjectId||config.firebaseProjectId,
       documents:[shared.doc,stats,...additions].filter(Boolean)};
   }
   function poll(){

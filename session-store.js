@@ -1,7 +1,7 @@
 /* Nur bei ausdrücklich gewähltem „30 Tage angemeldet bleiben“. Kein Passwort. */
 (function () {
   'use strict';
-  const dbName = 'marcela-test-auth-' + (window.MARCELA_CONFIG?.firebaseProjectId || 'unconfigured');
+  const dbName = 'marcela-test-auth-' + (window.MARCELA_CONFIG?.supabaseProjectId || window.MARCELA_CONFIG?.firebaseProjectId || 'unconfigured');
   async function database() {
     return new Promise((resolve,reject) => {
       const request=indexedDB.open(dbName,1);

@@ -13,10 +13,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
 <!-- Getrennte Testumgebung: keine Verbindung zum bisherigen Projekt. -->
-<script src="config.js?v=20261031-vercel1"></script>
+<script src="config.js?v=20261105-supabase1"></script>
 <script src="test-environment.js"></script>
 <script src="session-store.js"></script>
-<script src="auth.js"></script>
+<script src="auth-supabase.js?v=20261105-1"></script>
+<script src="supabase-content.js?v=20261105-1"></script>
+<script src="progress-merge.js?v=20261105-1"></script>
+<script src="legacy-progress-migration.js?v=20261105-pending1"></script>
 <script src="translator-api.js"></script>
 
 <style>
@@ -1260,7 +1263,7 @@ textarea.fc{resize:vertical;min-height:68px}
 //          Timeout: 5s — bei Fehler immer localStorage-Fallback.
 // Abhängig von: FB_URL, FB_KEY (hardcoded – private App)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const PROJECT_ID = (window.MARCELA_CONFIG || {}).firebaseProjectId || '';
+const PROJECT_ID = (window.MARCELA_CONFIG || {}).supabaseProjectId || (window.MARCELA_CONFIG || {}).firebaseProjectId || '';
 const FB_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/app/';
 const FB_KEY = (window.MARCELA_CONFIG || {}).firebaseApiKey || '';
 
@@ -6521,7 +6524,8 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
 })();
 </script>
 
-<script src="data-store.js?v=20261030-sync2"></script>
+<script src="supabase-transport.js?v=20261105-learning-only1"></script>
+<script src="data-store.js?v=20261105-learning-only1"></script>
 <script src="account-ui.js?v=20261105-learning-only1"></script>
 <script src="chapter-groups.js?v=20261030-2"></script>
 </body>

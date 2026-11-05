@@ -2691,7 +2691,7 @@ function renderOrder(item, c, groupLabel) {
   const corrStr = escJ(item.correct.join(' '));
   c.innerHTML =
     (groupLabel ? '<div class="p-group-prog">' + groupLabel + '</div>' : '')
-    + '<div class="p-card"><div class="p-badge">Reihenfolge</div><div class="p-hint">Setze den Satz zusammen:</div></div>'
+    + '<div class="p-card"><div class="p-badge">Satzbau</div>' + ((item.cz || item.czech_sentence) ? '<div class="p-word">' + esc(item.cz || item.czech_sentence) + '</div>' : '') + '<div class="p-hint">Setze den deutschen Satz zusammen:</div></div>'
     + '<div class="order-preview empty" id="order-prev">Wörter antippen…</div>'
     + '<button class="btn-undo" onclick="orderUndo()">↩ Letztes entfernen</button>'
     + '<div class="chips-wrap" id="order-chips">'

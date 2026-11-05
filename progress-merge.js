@@ -1,6 +1,6 @@
 /* Gemeinsame, versionsgeprüfte Zusammenführung persönlicher Lernstände. */
 (function(root){'use strict';const clone=v=>JSON.parse(JSON.stringify(v));
-  function progressOf(data){return {stats:data.stats||{},streak:data.streak||0,weak:data.weak||{},examRecords:data.examRecords||{},resets:data.resets||{},legacyImported:data.legacyImported===true,...(data._migration?{_migration:data._migration}:{})};}
+  function progressOf(data){return {stats:data.stats||{},streak:data.streak||0,weak:data.weak||{},examRecords:data.examRecords||{},resets:data.resets||{},learningEvidence:data.learningEvidence||{},legacyImported:data.legacyImported===true,...(data._migration?{_migration:data._migration}:{})};}
   function mergeProgress(remote,baseline,local){
     const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
     function merge(r,b,l){
@@ -22,6 +22,11 @@
       if(reset?.id&&reset.id!==oldReset?.id&&Number(reset.ts)>Number(remote.resets?.[day]?.ts||0))out.stats[day]=Number(local.stats?.[day]||0);
       else if(delta>0)out.stats[day]=Number(remote.stats?.[day]||0)+delta;
     }
+    const observations=new Map();
+    for(const ledger of [remote.learningEvidence,local.learningEvidence])for(const event of Object.values(ledger||{})){
+      if(event&&event.version===1&&typeof event.id==='string'&&Number.isFinite(event.ts)&&!observations.has(event.id))observations.set(event.id,event);
+    }
+    out.learningEvidence=Object.fromEntries([...observations.values()].sort((a,b)=>b.ts-a.ts||a.id.localeCompare(b.id)).slice(0,500).map(e=>[e.id,e]));
     out.legacyImported=!!(remote.legacyImported||local.legacyImported);
     out.streak=0;const date=new Date();
     for(let i=0;i<730;i++){

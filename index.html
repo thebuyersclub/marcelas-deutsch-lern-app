@@ -897,7 +897,7 @@ textarea.fc{resize:vertical;min-height:68px}
       </div>
       <div class="mode-card" id="mode-sentences" data-action="mode-card">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg></div><div class="mode-name">Sätze</div>
-        <div class="mode-desc">Ganze Sätze üben<span class="cz">Procvičovat celé věty</span></div>
+        <div class="mode-desc">Im Kopf übersetzen und aufdecken<span class="cz">Přeložit v duchu a odkrýt překlad</span></div>
         <div class="mode-bar" style="background:#007AFF"></div>
       </div>
       <div class="mode-card" id="mode-sentorder" onclick="startPractice('sentorder')">
@@ -4601,7 +4601,7 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
     const card = document.createElement('div');
     card.className = 'mode-card'; card.id = 'mode-sentences';
     card.setAttribute('onclick', "openLessonSelect('sentences')");
-    card.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h6"/></svg></div><div class="mode-name">Sätze</div><div class="mode-desc">Sätze nach Lektion üben<span class="cz">Procvičovat věty podle lekce</span></div><div class="mode-bar" style="background:#5AC8FA"></div>';
+    card.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h6"/></svg></div><div class="mode-name">Sätze</div><div class="mode-desc">Im Kopf übersetzen und aufdecken<span class="cz">Přeložit v duchu a odkrýt překlad</span></div><div class="mode-bar" style="background:#5AC8FA"></div>';
     const order = document.getElementById('mode-order'); grid.insertBefore(card, order || null);
   }
   window.patchLessonModeCards = function() {
@@ -5181,7 +5181,7 @@ Ziel:
     div.className = "mode-card";
     div.id = "mode-sentences";
     div.setAttribute("data-action","mode-card");
-    div.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg></div><div class="mode-name">Sätze</div><div class="mode-desc">Ganze Sätze üben<span class="cz">Procvičovat celé věty</span></div><div class="mode-bar" style="background:#007AFF"></div>';
+    div.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg></div><div class="mode-name">Sätze</div><div class="mode-desc">Im Kopf übersetzen und aufdecken<span class="cz">Přeložit v duchu a odkrýt překlad</span></div><div class="mode-bar" style="background:#007AFF"></div>';
     if(sentOrder && sentOrder.parentNode) sentOrder.parentNode.insertBefore(div, sentOrder);
     else grid.appendChild(div);
   }
@@ -6000,7 +6000,7 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
     if(typeof _pMode!=='undefined'&&_pMode==='sentences'){
       var pf=byId('p-fill'),pc=byId('p-count');if(pf)pf.style.width=((_pQ&&_pQ.length)?_pI/_pQ.length*100:0)+'%';if(pc)pc.textContent=_pI+' / '+(_pQ?_pQ.length:0);
       if(_pI>=_pQ.length){_pTotalScore+=_pScore;_pTotalCards+=_pQ.length;_pRound++;_pChunkStart+=20;if(_pChunkStart>=_pAllItems.length){_pAllItems=_pAllItems.sort(function(){return Math.random()-.5;});_pChunkStart=0;toast('Alle Sätze durch! Neu gemischt…','ok');}_pQ=_pAllItems.slice(_pChunkStart,_pChunkStart+20);_pOrigItems=_pQ.slice();_pI=0;_pScore=0;_pFlipped=false;}
-      var c=byId('p-content');if(!c)return;c.innerHTML='';var item=wp(_pQ[_pI]||{},{_sentenceMode:true});if(!item.de||!item.cz){c.innerHTML='<div class="empty-msg">Keine gültigen Satzdaten in dieser Auswahl.</div><button class="btn-check" onclick="nextCard()">Weiter</button>';return;}window.renderTyping(item,c);return;
+      var c=byId('p-content');if(!c)return;c.innerHTML='';var item=wp(_pQ[_pI]||{},{_sentenceMode:true});if(!item.de||!item.cz){c.innerHTML='<div class="empty-msg">Keine gültigen Satzdaten in dieser Auswahl.</div><button class="btn-check" onclick="nextCard()">Weiter</button>';return;}renderFlashcard(item,c);return;
     }
     return oldRC?oldRC.apply(this,arguments):undefined;
   };
@@ -6009,7 +6009,7 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
     item=item||{};var global=false;try{global=!!_globalLessonCheckActive;}catch(e){}var old=_pMode;_pMode=item._lcMode||'typing';
     var il=(typeof lessonCheckLabel==='function')?lessonCheckLabel(item):label(item._lcMode||'typing'),cz=(typeof lessonCheckCzLabel==='function')?lessonCheckCzLabel(item):'';
     if(typeof setPracticeModeTitle==='function')setPracticeModeTitle((global?'Prüfungs-Simulation':'Lektionsüberprüfung')+' · '+il,global?(typeof practiceModeCzLabel==='function'?practiceModeCzLabel('globalcheck'):'Zkušební simulace'):cz);
-    if(item._lcMode==='flashcard')renderFlashcard(item,c);else if(item._lcMode==='mc')renderMC(item,c);else if(item._lcMode==='sentences')window.renderTyping(item,c);else if(item._lcMode==='order')renderOrder(item,c);else if(item._lcMode==='sentorder')renderSentOrder(item,c);else if(item._lcMode==='fill')renderFill(item,c);else if(item._lcMode==='typing')window.renderTyping(item,c);else if(item._lcMode==='qa')renderQA(item,c);else if(item._lcMode==='clock')renderClock(item,c);else if(oldLC)oldLC(item,c);_pMode=old;
+    if(item._lcMode==='flashcard')renderFlashcard(item,c);else if(item._lcMode==='mc')renderMC(item,c);else if(item._lcMode==='sentences')renderFlashcard(item,c);else if(item._lcMode==='order')renderOrder(item,c);else if(item._lcMode==='sentorder')renderSentOrder(item,c);else if(item._lcMode==='fill')renderFill(item,c);else if(item._lcMode==='typing')window.renderTyping(item,c);else if(item._lcMode==='qa')renderQA(item,c);else if(item._lcMode==='clock')renderClock(item,c);else if(oldLC)oldLC(item,c);_pMode=old;
   };
   window.lessonCheckItemsForChapter=function(ch){var out=[];['flashcard','mc','sentences','order','sentorder','fill','typing','qa'].forEach(function(m){itemsFor(ch,m).forEach(function(i){out.push(Object.assign({_lcMode:m},i));});});return out.sort(function(){return Math.random()-.5;});};
   window.lessonCheckItemsForAllChapters=function(){var out=[];chapters().forEach(function(ch){window.lessonCheckItemsForChapter(ch).forEach(function(i){out.push(Object.assign({_chapterId:ch.id,_chapterName:ch.name||'Kapitel'},i));});});return out.sort(function(){return Math.random()-.5;});};

@@ -85,7 +85,7 @@
     }
     throw new Error('Der Lernstand wird gerade auf einem anderen Gerät gespeichert. Deine Änderungen bleiben lokal erhalten; bitte erneut versuchen.');
   }
-  function baseChapters(data){return (data.chapters||[]).filter(ch=>!ch._dictionaryAdditions);}
+  function baseChapters(data){return (data.chapters||[]).filter(ch=>!ch._dictionaryAdditions).map(ch=>{const clean={...ch};for(const field of ['vocab','sentences','lessons'])if(Array.isArray(ch[field]))clean[field]=ch[field].filter(item=>!item._chapterAdditionPending);return clean;});}
   async function getBase() {
     const doc=await request('/app/data',{},true);
     return {doc,chapters:doc?JSON.parse(doc.fields?.chapters?.stringValue||'[]'):[]};
@@ -100,17 +100,20 @@
   }
   function withAdditions(chapters,docs){
     if(!docs.length)return chapters;
-    const ch={id:'dictionary-additions',name:'Eigene Wörter und Sätze',desc:'Ergänzungen zum Lernen',_dictionaryAdditions:true,vocab:[],sentences:[],grammar:[],lessons:[]};
     for(const doc of docs){
-      const f=doc.fields||{},type=f.type?.stringValue;
-      if(!['vocab','sentence'].includes(type))continue;
-      const item={id:doc.name.split('/').pop(),de:f.de?.stringValue||'',cz:f.cz?.stringValue||'',example:f.example?.stringValue||'',lessonName:'Eigene Ergänzungen'};
-      ch[type==='vocab'?'vocab':'sentences'].push(item);
+      const f=doc.fields||{},type=f.type?.stringValue,chapterId=f.chapterId?.stringValue;
+      if(!['vocab','sentence'].includes(type)||!chapterId)continue;
+      const ch=chapters.find(c=>c.id===chapterId);if(!ch)continue;
+      const item={id:doc.name.split('/').pop(),de:f.de?.stringValue||'',cz:f.cz?.stringValue||'',example:f.example?.stringValue||'',lessonName:'Standard',_chapterAdditionPending:true};
+      const field=type==='vocab'?'vocab':'sentences';ch[field]=ch[field]||[];
+      if(!ch[field].some(x=>x.id===item.id))ch[field].push(item);
+      if(type==='sentence'){ch.lessons=ch.lessons||[];const id='m-order-from-'+item.id;if(!ch.lessons.some(x=>x.id===id))ch.lessons.push({id,type:'order',correct:item.de.split(/\s+/),cz:item.cz,lessonName:'Standard',_chapterAdditionPending:true});}
     }
-    return [...chapters,ch];
+    return chapters;
   }
   async function load() {
-    const [remote,progress,additions]=await Promise.all([getBase(),request('/progress/'+encodeURIComponent(user().uid),{},true),listAdditions()]);
+    const additions=await listAdditions();
+    const [remote,progress]=await Promise.all([getBase(),request('/progress/'+encodeURIComponent(user().uid),{},true)]);
     baseVersion=remote.doc?.updateTime||null;baseSignature=JSON.stringify(remote.chapters);
     let personal=progress?JSON.parse(progress.fields?.data?.stringValue||'{}'):{};
     if(!progressClient)progressClient=progressClientForTab();
@@ -196,15 +199,19 @@
     return save(_cache);
   }
   function localBackup(){return {savedAt:new Date().toISOString(),projectId:config.supabaseProjectId||config.firebaseProjectId,data:clone(_cache),pending:JSON.parse(localStorage.getItem(pendingKey())||'null')};}
-  async function addEntry(type,de,cz,example=''){
+  async function addEntry(type,de,cz,example='',chapterId){
+    if(!chapterId||!baseChapters(_cache).some(ch=>ch.id===chapterId))throw new Error('Bitte zuerst ein gültiges Kapitel wählen.');
     de=de.trim();cz=cz.trim();example=example.trim();
     if(!['vocab','sentence'].includes(type)||!de||!cz||de.length>2000||cz.length>2000||example.length>4000)throw new Error('Bitte gültige deutsche und tschechische Texte eingeben.');
     const id=crypto.randomUUID();
     await request(':commit',{method:'POST',body:JSON.stringify({writes:[{
-      update:{name:root+'/dictionaryAdditions/'+id,fields:{type:{stringValue:type},de:{stringValue:de},cz:{stringValue:cz},example:{stringValue:example},createdBy:{stringValue:user().uid}}},
+      update:{name:root+'/dictionaryAdditions/'+id,fields:{type:{stringValue:type},de:{stringValue:de},cz:{stringValue:cz},example:{stringValue:example},chapterId:{stringValue:chapterId},createdBy:{stringValue:user().uid}}},
       currentDocument:{exists:false},updateTransforms:[{fieldPath:'createdAt',setToServerValue:'REQUEST_TIME'}]
     }]})});
-    const additions=await listAdditions();_cache.chapters=withAdditions(baseChapters(_cache),additions);
+    const additions=await listAdditions();
+    const name=root+'/dictionaryAdditions/'+id;
+    if(!additions.some(doc=>doc.name.split('/').pop()===id))additions.push({name,fields:{type:{stringValue:type},chapterId:{stringValue:chapterId},de:{stringValue:de},cz:{stringValue:cz},example:{stringValue:example}}});
+    _cache.chapters=withAdditions(baseChapters(_cache),additions);
     localStorage.setItem(LS_KEY,JSON.stringify(_cache));
     return id;
   }

@@ -35,11 +35,12 @@
    }
    if(path.startsWith('/dictionaryAdditions')){
      const rows=[];for(let offset=0;;offset+=500){const page=await rest('dictionary_additions?select=*&order=id&limit=500&offset='+offset);rows.push(...page);if(page.length<500)break;}
-     return {documents:rows.map(r=>({name:'supabase/'+config.supabaseProjectId+'/documents/dictionaryAdditions/'+r.id,fields:{type:{stringValue:r.kind},de:{stringValue:r.german},cz:{stringValue:r.czech},example:{stringValue:r.example},createdBy:{stringValue:r.created_by},createdAt:{timestampValue:r.created_at}}}))};
+     return {documents:rows.filter(r=>!r.extra?.promoted_to).map(r=>({name:'supabase/'+config.supabaseProjectId+'/documents/dictionaryAdditions/'+r.id,fields:{type:{stringValue:r.kind},chapterId:{stringValue:r.extra?.target_chapter_id||''},de:{stringValue:r.german},cz:{stringValue:r.czech},example:{stringValue:r.example},createdBy:{stringValue:r.created_by},createdAt:{timestampValue:r.created_at}}}))};
    }
    if(path===':commit'){
      const writes=JSON.parse(options.body).writes;if(writes.length!==1)throw new Error('Ungültiger Eintrag.');const w=writes[0],f=w.update.fields;
-     await rest('dictionary_additions',{method:'POST',body:JSON.stringify({id:w.update.name.split('/').pop(),kind:f.type.stringValue,german:f.de.stringValue,czech:f.cz.stringValue,example:f.example.stringValue,created_by:window.marcelaAuth.user().uid,extra:{}})});return {};
+     const chapterId=f.chapterId?.stringValue;if(!chapterId)throw new Error('Kapitelzuordnung fehlt.');
+     await rest('dictionary_additions',{method:'POST',body:JSON.stringify({id:w.update.name.split('/').pop(),kind:f.type.stringValue,german:f.de.stringValue,czech:f.cz.stringValue,example:f.example.stringValue,created_by:window.marcelaAuth.user().uid,extra:{target_chapter_id:chapterId,target_lesson:'Standard'}})});return {};
    }
    throw new Error('Dieser Datenbankzugriff ist nicht vorgesehen.');
  }

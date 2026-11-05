@@ -2169,7 +2169,11 @@ function reloadWeakQueue() {
 let _trDir = 'de-cz'; // de-cz or cz-de
 let _trResult = '';
 
-function showTranslator() {
+function showTranslator(chapterId) {
+  const chapter = chapterId === null ? null : (typeof getCh === 'function' ? getCh() : null);
+  window.marcelaTranslatorChapterId = chapter && !chapter._dictionaryAdditions ? chapter.id : null;
+  const saveRow = document.getElementById('tr-save-row');
+  if(saveRow){saveRow.hidden = !window.marcelaTranslatorChapterId;saveRow.style.display = window.marcelaTranslatorChapterId ? 'flex' : 'none';const label=saveRow.querySelector('.tr-save-label');if(label)label.textContent = chapter ? chapter.name + ' · Standard' : '';}
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('translator-view').classList.add('active');
   document.getElementById('translator-view').querySelector('.btn-back').onclick = function(){ showView('mode-select'); };
@@ -2178,7 +2182,7 @@ function showTranslator() {
 }
 
 function showTranslatorFromSplash() {
-  showTranslator();
+  showTranslator(null);
   document.getElementById('translator-view').querySelector('.btn-back').onclick = function(){ showView('splash'); };
 }
 
@@ -6524,9 +6528,9 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
 })();
 </script>
 
-<script src="supabase-transport.js?v=20261105-learning-only1"></script>
-<script src="data-store.js?v=20261105-learning-only1"></script>
-<script src="account-ui.js?v=20261105-account-name1"></script>
+<script src="supabase-transport.js?v=20261105-chapter-additions1"></script>
+<script src="data-store.js?v=20261105-chapter-additions1"></script>
+<script src="account-ui.js?v=20261105-chapter-additions1"></script>
 <script src="chapter-groups.js?v=20261030-2"></script>
 </body>
 </html>

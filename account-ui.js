@@ -2,7 +2,10 @@
 (function(){
  'use strict';
  function install(){
-  const user=window.marcelaAuth.user();if(!user?.verified||document.getElementById('account-tools'))return;
+  const user=window.marcelaAuth.user();
+  const name=document.querySelector?.('.spl-name');
+  if(user?.verified&&name)name.textContent=user.role==='admin'?'Michael':'Marcela';
+  if(!user?.verified||document.getElementById('account-tools'))return;
   const box=document.createElement('div');box.id='account-tools';
   box.style.cssText='margin:12px auto;padding:12px 12px 104px;max-width:680px;background:#fff;border-radius:14px;font-family:Nunito,system-ui';
       box.innerHTML='<details><summary>Wort oder Satz hinzufügen</summary><form style="display:grid;gap:10px;margin-top:12px"><label>Art <select name="type"><option value="vocab">Wort</option><option value="sentence">Satz</option></select></label><label>Deutsch <input name="de" required maxlength="2000"></label><label>Tschechisch <input name="cz" required maxlength="2000"></label><label>Beispiel <input name="example" maxlength="4000"></label><button type="submit">Hinzufügen</button><p role="status"></p></form></details>';

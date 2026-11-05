@@ -2,7 +2,6 @@
 (function(){
  'use strict';
  const config=window.MARCELA_CONFIG, model=window.marcelaContent;
- const bases=new Map(), pending=new Map();
  const conflict=()=>Object.assign(new Error('Die Daten wurden inzwischen geändert. Deine Änderungen bleiben lokal erhalten.'),{code:'CONFLICT'});
  async function rest(path,options={}){
    if(!window.marcelaAuth.user()?.verified)throw new Error('Bitte zuerst anmelden.');
@@ -14,25 +13,12 @@
  const rpc=(name,body)=>rest('rpc/'+name,{method:'POST',body:JSON.stringify(body||{})});
  function doc(chapters,version){return {name:'supabase/'+config.supabaseProjectId+'/documents/app/data',updateTime:version,fields:{chapters:{stringValue:JSON.stringify(chapters)}}};}
  async function versionFor(db){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(model.canonical(db)));return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('');}
- async function remember(db){const version=await versionFor(db);bases.set(version,db);if(bases.size>8)bases.delete(bases.keys().next().value);return doc(model.chapters(db),version);}
  async function shared(){
    const result=await rpc('app_content_state'),db=result.tables,version=await versionFor(db);
-   bases.set(version,db);if(bases.size>8)bases.delete(bases.keys().next().value);
    return doc(model.chapters(db),version);
  }
- async function saveContent(path,options){
-   const condition=new URLSearchParams(path.split('?')[1]),version=condition.get('currentDocument.updateTime'),db=bases.get(version);
-   if(!db)throw conflict();
-   const chapters=JSON.parse(JSON.parse(options.body).fields.chapters.stringValue),changes=model.changes(db,chapters);
-   if(!changes.length)return doc(chapters,version);
-   const hash=model.canonical(changes),job=pending.get(hash)||{p_run_id:crypto.randomUUID(),p_expected:db,p_changes:changes};pending.set(hash,job);
-   const result=await rpc('save_app_content',job),committed=JSON.parse(JSON.stringify(db));
-   for(const change of result.rows){const rows=committed[change.table],i=rows.findIndex(r=>model.key(change.table,r)===model.key(change.table,change.row));if(i<0)rows.push(change.row);else rows[i]=change.row;}
-   // Nur den atomar bestätigten Stand übernehmen; kein späterer fremder Stand als Schreibbasis.
-   pending.delete(hash);return remember(committed);
- }
  async function request(path,options={},missingAllowed=false){
-   if(path.startsWith('/app/data'))return options.method==='PATCH'?saveContent(path,options):shared();
+   if(path.startsWith('/app/data')){if(options.method)throw new Error('Gemeinsame Lerninhalte werden ausschließlich in Google Sheets bearbeitet.');return shared();}
    if(path.startsWith('/app/stats')){if(options.method)throw new Error('Historische Lernzeiten werden nur einmalig übertragen.');return null;}
    if(path.startsWith('/progress/')){
      const uid=decodeURIComponent(path.split('/')[2].split('?')[0]);
@@ -57,5 +43,5 @@
    }
    throw new Error('Dieser Datenbankzugriff ist nicht vorgesehen.');
  }
- window.marcelaSupabaseTransport=Object.freeze({request,async contentMatches(chapters){return model.changes((await rpc('app_content_state')).tables,chapters).length===0;}});
+ window.marcelaSupabaseTransport=Object.freeze({request});
 })();

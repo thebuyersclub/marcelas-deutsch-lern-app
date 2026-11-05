@@ -140,7 +140,7 @@
       if(pending.progressClient){progressClient=pending.progressClient;progressSequence=Math.max(progressSequence,pending.progressSequence||0);progressAck=pending.progressBase||progressAck;progressAckSequence=pending.progressBaseSequence||0;}
       // Lokale Änderungen behalten. Ein Konflikt wird niemals automatisch überschrieben.
       personal=pending.progress;
-      if(user().role==='admin')chapters=pending.chapters;
+      if(config.provider!=='supabase'&&user().role==='admin')chapters=pending.chapters;
       dirty=true;conflicted=user().role==='admin'&&pending.baseVersion!==baseVersion&&JSON.stringify(pending.chapters)!==baseSignature;
       status(conflicted?'Lokale Änderungen und Cloud-Stand unterscheiden sich. Bitte vor weiteren Änderungen abgleichen.':'Es gibt noch nicht übertragene Änderungen auf diesem Gerät.',true);
     }
@@ -152,7 +152,8 @@
   async function persistSnapshot(snapshot){
     const sig=JSON.stringify(snapshot.chapters),psig=JSON.stringify(snapshot.progress);
     // Ohne Adminrolle gibt es keinen Schreibaufruf auf gemeinsame Inhalte.
-    if(user().role==='admin'&&sig!==baseSignature){
+    if(config.provider==='supabase'&&sig!==baseSignature)throw new Error('Gemeinsame Lerninhalte werden ausschließlich in Google Sheets bearbeitet.');
+    if(config.provider!=='supabase'&&user().role==='admin'&&sig!==baseSignature){
       const condition=baseVersion?'currentDocument.updateTime='+encodeURIComponent(baseVersion):'currentDocument.exists=false';
       const result=await request('/app/data?'+condition,{method:'PATCH',body:JSON.stringify({fields:{chapters:{stringValue:sig}}})});
       baseVersion=result.updateTime;baseSignature=sig;

@@ -274,7 +274,8 @@
    if(view.status==='paused'){
     actions.append(button('Fortsetzen',()=>send('event',{type:'resume'})));
    }else if(view.status==='complete'){
-    if(view.plan?.action!=='none')actions.append(button('Nächster Unterricht',()=>send('next')));
+    if(view.plan?.action!=='none')actions.append(button('Weiterlernen',()=>send('next')));
+    else actions.append(node('p','Du hast alle verfügbaren Kapitel abgeschlossen.'));
     if(view.reviewDueAt&&Date.now()>=Date.parse(view.reviewDueAt))
      actions.append(button('Wiederholung beginnen',()=>send('review'),true));
     actions.append(button('Diese Einheit noch einmal',()=>send('restart'),true));

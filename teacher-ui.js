@@ -67,9 +67,16 @@
   }catch{history=[];}
   pruneHistory();
  }
- function remember(item){
+ function remember(item,updateTask=false){
   pruneHistory();
-  if(!item.de||history.some(entry=>entry.id===item.id))return;
+  if(!item.de)return;
+  const existing=history.find(entry=>entry.id===item.id);
+  if(existing){
+   if(updateTask&&['de','cz','prompt','promptLang','needsTranslation'].some(key=>existing[key]!==item[key])){
+    Object.assign(existing,item);delete existing.translated;saveHistory();
+   }
+   return;
+  }
   history.push({...item,at:Date.now()});saveHistory();
  }
  const localTime=at=>new Date(at).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
@@ -206,8 +213,13 @@
   const panel=node('div',undefined,'foxly-help');panel.hidden=!menuOpen;
   panel.append(button('Překlad',()=>{menuOpen=false;translating=true;stopSpeech();render();},true));
   if(view.status==='active'){
+   panel.append(button('? · Co mám udělat?',()=>{
+    menuOpen=false;panel.hidden=true;plus.setAttribute('aria-expanded','false');
+    return send('event',{type:'help',action:'explain'});
+   },true));
    panel.append(button('Přečíst nahlas',()=>speak(),true));
    for(const phrase of view.helpPhrases||[]){
+    if(phrase.effect==='explain')continue;
     panel.append(button(phrase.cz||phrase.de,()=>['repeat','slower'].includes(phrase.effect)
      ?speak(phrase.effect==='slower'):send('event',{type:'help',action:phrase.effect}),true));
    }
@@ -244,7 +256,7 @@
     const exercise=view.exercise;
     remember({id:view.sessionId+':task:'+view.stepId,side:'left',...view.teacher,
      needsTranslation:!view.stepId.startsWith('linked-practice-')||exercise?.mode==='question',
-     prompt:exercise?.prompt||'',promptLang:['words','vocabulary','writing'].includes(exercise?.mode)?'cs':''});
+     prompt:exercise?.prompt||'',promptLang:['words','vocabulary','writing'].includes(exercise?.mode)?'cs':''},true);
    }
    box.append(...history.map(bubble));
    if(keepInput){

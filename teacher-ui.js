@@ -12,7 +12,7 @@
  function syncClock(){if(active()&&!document.hidden&&view?.status==='active'){if(!tick){lastTick=Date.now();tick=setInterval(clock,4000);}}else stopClock();}
  function content(){return document.getElementById('teacher-content');}
  function message(text){const el=document.getElementById('teacher-status');if(el)el.textContent=text;}
- function setBusy(value){busy=value;document.querySelectorAll('#teacher-view button,#teacher-view textarea').forEach(el=>el.disabled=value);content()?.setAttribute('aria-busy',String(value));}
+ function setBusy(value){busy=value;document.querySelectorAll('#teacher-view button').forEach(el=>el.disabled=value);content()?.setAttribute('aria-busy',String(value));}
  async function request(operation,event){
   if(user()?.uid!==owner)throw Error('Bitte erneut anmelden.');
   const seq=generation,body={operation,chat:true,requestId:crypto.randomUUID()};
@@ -117,18 +117,16 @@
   form.append(submit);
  }
  function textComposer(parent,{value,onInput,onSend}){
-  const form=node('form',undefined,'foxly-input-row'),answer=node('textarea');
-  answer.rows=1;if(!translating)answer.maxLength=2000;answer.autocomplete='off';
+  const form=node('form',undefined,'foxly-input-row'),answer=node('input',undefined,'foxly-text-input');
+  answer.type='text';if(!translating)answer.maxLength=2000;answer.autocomplete='off';
+  answer.setAttribute('enterkeyhint','send');
   answer.placeholder=translating?'Napiš německy nebo česky…':'Napiš zprávu…';
   answer.setAttribute('aria-label',answer.placeholder);answer.value=value;
-  answer.disabled=translating?translationBusy:busy;
   answer.oninput=()=>onInput(answer.value);
-  answer.onkeydown=event=>{
-   if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();form.requestSubmit();}
-  };
   form.append(answer);sendButton(form);
   form.onsubmit=event=>{
    event.preventDefault();
+   if(translating?translationBusy:busy)return;
    if(answer.value.trim())onSend(answer.value.trim());
    else answer.focus();
   };
@@ -214,11 +212,22 @@
  }
  function render(){
   const box=content(),composer=document.getElementById('foxly-composer');
-  box.replaceChildren();composer.replaceChildren();document.getElementById('teacher-retry').replaceChildren();message('');
+  const focused=document.activeElement;
+  const textTask=view?.status==='active'&&!waiting&&view.kind!=='choice'&&!view.exercise?.items?.length;
+  const composerMode=translating?'translation':view?.kind||'';
+  const keepInput=focused?.className==='foxly-text-input'&&composer.contains(focused)&&
+   composer.dataset.mode===composerMode&&(translating||textTask);
+  box.replaceChildren();
+  if(!keepInput){
+   composer.replaceChildren();
+   composer.dataset.mode=composerMode;
+  }
+  document.getElementById('teacher-retry').replaceChildren();message('');
   refreshHeader();
   if(translating){
    box.append(...translations.map(bubble));
-   textComposer(composer,{value:translationDraft,onInput:value=>{translationDraft=value;},onSend:translate});
+   if(keepInput)focused.value=translationDraft;
+   else textComposer(composer,{value:translationDraft,onInput:value=>{translationDraft=value;},onSend:translate});
    if(translationBusy)message('Překládám…');
   }else if(view&&!view.empty){
    if(!waiting&&!view.endedEarly&&view.status!=='paused'){
@@ -228,6 +237,11 @@
      prompt:exercise?.prompt||'',promptLang:['words','vocabulary','writing'].includes(exercise?.mode)?'cs':''});
    }
    box.append(...history.map(bubble));
+   if(keepInput){
+    focused.value=draft;
+    box.scrollTop=box.scrollHeight;
+    return;
+   }
    const actions=node('div',undefined,'foxly-compose-main');composer.append(actions);
    if(waiting){
     actions.append(button(view.feedback?.wait?'Ano, pokračovat':'Weiter',()=>{waiting=false;render();}));
@@ -294,8 +308,16 @@
    }
   }).observe(page,{attributes:true,attributeFilter:['class']});
   const viewport=window.visualViewport;
-  const resize=()=>{if(viewport)page.style.setProperty('--foxly-height',viewport.height+'px');};
-  viewport?.addEventListener('resize',resize);resize();
+  const resize=()=>{
+   if(!viewport)return;
+   const atBottom=box.scrollHeight-box.clientHeight-box.scrollTop<24;
+   page.style.setProperty('--foxly-height',viewport.height+'px');
+   page.style.setProperty('--foxly-top',viewport.offsetTop+'px');
+   if(atBottom)box.scrollTop=box.scrollHeight;
+  };
+  viewport?.addEventListener('resize',resize);
+  viewport?.addEventListener('scroll',resize);
+  resize();
   document.addEventListener('visibilitychange',()=>{
    if(document.hidden){stopSpeech();stopClock();}
    else{if(active()&&pruneHistory()&&!translating)render();syncClock();}

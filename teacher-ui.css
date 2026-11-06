@@ -1,6 +1,12 @@
+html:has(#teacher-view.active), body:has(#teacher-view.active) {
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #14191c;
+  color-scheme: dark;
+}
 #teacher-view {
   position: fixed;
-  inset: 0;
+  inset: var(--foxly-top, 0px) 0 auto;
   z-index: 55;
   height: var(--foxly-height, 100dvh);
   min-height: 0;
@@ -95,7 +101,7 @@ body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { d
 }
 .foxly-compose-main { flex: 1; min-width: 0; max-height: 100%; overflow-y: auto; }
 .foxly-input-row { display: flex; align-items: flex-end; gap: 7px; width: 100%; }
-#teacher-view textarea, .foxly-tray {
+#teacher-view .foxly-text-input, .foxly-tray {
   flex: 1;
   min-width: 0;
   min-height: 44px;
@@ -106,8 +112,8 @@ body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { d
   border-radius: 22px;
   font: inherit;
 }
-#teacher-view textarea { resize: none; max-height: 110px; field-sizing: content; }
-#teacher-view textarea::placeholder { color: #d3d3d3; }
+#teacher-view .foxly-text-input { font-size: 16px; }
+#teacher-view .foxly-text-input::placeholder { color: #d3d3d3; }
 .teacher-button {
   min-width: 44px;
   min-height: 44px;
@@ -123,7 +129,8 @@ body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { d
 }
 .teacher-button.secondary { background: #393a3b; }
 .teacher-button:disabled { opacity: .6; cursor: wait; }
-.teacher-button:focus-visible, #teacher-view textarea:focus-visible, .foxly-translation summary:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.teacher-button:focus-visible, .foxly-translation summary:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+#teacher-view .foxly-text-input:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 .foxly-bar button, .foxly-actions > button, .foxly-input-row button[type="submit"] { font-size: 24px; line-height: 1; }
 .foxly-help {
   position: absolute;

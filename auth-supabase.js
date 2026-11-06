@@ -183,11 +183,11 @@
       panel.id = 'marcela-login';
       panel.setAttribute('aria-label','Anmeldung zur Lern-App');
       panel.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:#F2F2F7;display:grid;place-items:center;padding:24px;overflow:auto;font-family:Nunito,system-ui,sans-serif';
-      panel.innerHTML = `<form style="box-sizing:border-box;background:white;border-radius:24px;padding:28px;width:100%;max-width:420px;color:#1C1C1E;box-shadow:0 8px 32px #0001">
+      panel.innerHTML = `<form id="marcela-sign-in" name="login" method="post" autocomplete="on" style="box-sizing:border-box;background:white;border-radius:24px;padding:28px;width:100%;max-width:420px;color:#1C1C1E;box-shadow:0 8px 32px #0001">
         <h1 style="margin-top:0">Marcela · Deutsch lernen</h1><p>Willkommen! Melde dich mit deinem Lern- oder Administrationskonto an.</p>
-        <label style="display:block">E-Mail<input name="email" type="email" autocomplete="username" required style="box-sizing:border-box;display:block;width:100%;padding:12px;margin:8px 0 16px;border:1px solid #aaa;border-radius:10px;font:inherit"></label>
-        <label style="display:block">Passwort<input name="password" type="password" autocomplete="current-password" required style="box-sizing:border-box;display:block;width:100%;padding:12px;margin:8px 0 16px;border:1px solid #aaa;border-radius:10px;font:inherit"></label>
-        <details><summary>Bisheriges Passwort (nur falls abweichend)</summary><input name="oldPassword" type="password" autocomplete="off" aria-label="Bisheriges App-Passwort"></details>
+        <label for="username" style="display:block">E-Mail<input id="username" name="username" type="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required style="box-sizing:border-box;display:block;width:100%;padding:12px;margin:8px 0 16px;border:1px solid #aaa;border-radius:10px;font:inherit"></label>
+        <label for="password" style="display:block">Passwort<input id="password" name="password" type="password" autocomplete="current-password" required style="box-sizing:border-box;display:block;width:100%;padding:12px;margin:8px 0 16px;border:1px solid #aaa;border-radius:10px;font:inherit"></label>
+        <details data-legacy-password><summary>Bisheriges Passwort (nur falls abweichend)</summary></details>
         <label style="display:flex;gap:10px;align-items:center;margin-bottom:18px"><input name="remember" type="checkbox">30 Tage angemeldet bleiben</label>
         <button type="submit" style="width:100%;padding:13px;border:0;border-radius:12px;background:#007AFF;color:white;font:inherit;font-weight:800">Anmelden</button>
         <p role="status" aria-live="polite"></p>
@@ -195,6 +195,16 @@
         <div data-verification hidden><button type="button" data-send>Bestätigungs-E-Mail senden</button> <button type="button" data-check>Bestätigung prüfen</button></div>
       </form>`;
       const form=panel.querySelector('form'), status=form.querySelector('[role=status]');
+      const legacy=form.querySelector('[data-legacy-password]');
+      let oldPassword;
+      legacy.addEventListener('toggle',()=>{
+        if(!legacy.open||oldPassword)return;
+        oldPassword=document.createElement('input');
+        oldPassword.type='password';
+        oldPassword.autocomplete='off';
+        oldPassword.setAttribute('aria-label','Bisheriges App-Passwort');
+        legacy.append(oldPassword);
+      });
       const submit=form.querySelector('[type=submit]');
       const finish=()=>{if(session?.verified){panel.remove();showAccountControls();resolve(publicUser());}};
       const retry=form.querySelector('[data-retry-restore]');
@@ -214,11 +224,11 @@
       form.addEventListener('submit', async event => {
         event.preventDefault(); submit.disabled=true; status.textContent='Anmeldung wird geprüft …';
         try {
-          await signIn(form.elements.email.value.trim(), form.elements.password.value, form.elements.remember.checked, form.elements.oldPassword.value);
-          form.elements.password.value=''; form.elements.oldPassword.value='';
+          await signIn(form.elements.username.value.trim(), form.elements.password.value, form.elements.remember.checked, oldPassword?.value||'');
+          form.elements.password.value=''; if(oldPassword)oldPassword.value='';
           if (session.verified) finish();
           else {status.textContent='Bitte bestätige zuerst deine E-Mail-Adresse. Du kannst dir hier eine Bestätigung senden lassen.'; form.querySelector('[data-verification]').hidden=false;}
-        } catch (error) {session=null; await store.clear(); form.elements.password.value=''; form.elements.oldPassword.value=''; status.textContent=error.message;}
+        } catch (error) {session=null; await store.clear(); form.elements.password.value=''; if(oldPassword)oldPassword.value=''; status.textContent=error.message;}
         finally {submit.disabled=false;}
       });
       form.querySelector('[data-send]').addEventListener('click', async event => {

@@ -7,6 +7,8 @@
   let restoring = null;
   const rememberDuration = 30 * 24 * 60 * 60 * 1000;
   const store = window.marcelaSessionStore;
+  let restoreUnavailable = false;
+  const rejectedSession = () => Object.assign(new Error('Konto oder Sitzung nicht mehr gültig.'), {discardRemembered:true});
   const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('marcela-test-auth-' + window.MARCELA_CONFIG?.supabaseProjectId) : null;
   async function persist(current) {
     if (current !== session || !current.rememberUntil) return;
@@ -44,6 +46,7 @@
   async function restore() {
     if(session) return;
     if(!restoring) restoring=(async()=>{
+      restoreUnavailable=false;
       let saved;
       try {saved=await store.read();} catch (_) {return;}
       if(!saved) return;
@@ -57,10 +60,14 @@
       try {
         const data=await api('lookup',{idToken:await token()});
         const user=(data.users||[]).find(u=>u.localId===saved.uid);
-        if(!user || user.disabled || roleFor(user.localId,user.email)!==session.role) throw new Error('Konto nicht freigegeben');
+        if(!user || user.disabled || roleFor(user.localId,user.email)!==session.role) throw rejectedSession();
         session.verified=user.emailVerified===true;
         await window.marcelaLegacyMigration.ensure();
-      } catch (_) {session=null;await store.clear();}
+      } catch (error) {
+        session=null;
+        if(error.discardRemembered)await store.clear();
+        else restoreUnavailable=true;
+      }
     })().finally(()=>{restoring=null;});
     await restoring;
   }
@@ -79,7 +86,13 @@
         'Content-Type':'application/json',...(bearer?{Authorization:'Bearer '+bearer}:{})},
       ...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(15000)});
     const result=response.status===204?{}:await response.json();
-    if(!response.ok)throw new Error('Anmeldung fehlgeschlagen. Bitte Zugangsdaten und Verbindung prüfen.');
+    if(!response.ok){
+      const code=result.error_code||result.code;
+      if((path==='user'&&[401,403].includes(response.status))||
+       (path==='token?grant_type=refresh_token'&&['refresh_token_not_found','refresh_token_already_used','session_not_found','user_banned','user_not_found','invalid_grant'].includes(code||result.error)))
+       throw rejectedSession();
+      throw new Error('Anmeldung fehlgeschlagen. Bitte Zugangsdaten und Verbindung prüfen.');
+    }
     return result;
   }
   async function api(action,body) {
@@ -93,7 +106,8 @@
       const r=await fetch(config().supabaseUrl+'/rest/v1/account_roles?select=user_id,role&user_id=eq.'+encodeURIComponent(u.id),{
         headers:{apikey:config().supabasePublishableKey,Authorization:'Bearer '+body.idToken},signal:AbortSignal.timeout(15000)});
       const roles=await r.json();
-      if(!r.ok||!Array.isArray(roles)||roles.length!==1||roles[0].role!==roleFor(u.id,u.email))throw new Error('Konto nicht freigegeben.');
+      if(!r.ok||!Array.isArray(roles))throw new Error('Kontofreigabe konnte nicht geprüft werden.');
+      if(roles.length!==1||roles[0].role!==roleFor(u.id,u.email))throw rejectedSession();
       return {users:[{localId:u.id,email:u.email,emailVerified:!!u.email_confirmed_at,disabled:!!u.banned_until&&Date.parse(u.banned_until)>Date.now()}]};
     }
     if(action==='sendOobCode')return authRequest('resend',{type:'signup',email:session.email});
@@ -115,7 +129,8 @@
             if(saved?.uid===current.uid&&saved.projectId===config().supabaseProjectId)current.refreshToken=saved.refreshToken;
           }
           const data=await authRequest('token?grant_type=refresh_token',{refresh_token:current.refreshToken});
-          if(data.user?.id!==current.uid||session!==current)throw new Error('Sitzung abgelaufen.');
+          if(data.user?.id!==current.uid)throw rejectedSession();
+          if(session!==current)throw new Error('Sitzung abgelaufen.');
           current.idToken=data.access_token;current.refreshToken=data.refresh_token;
           current.expiresAt=Date.now()+Number(data.expires_in)*1000;
           await persist(current);
@@ -176,11 +191,26 @@
         <label style="display:flex;gap:10px;align-items:center;margin-bottom:18px"><input name="remember" type="checkbox">30 Tage angemeldet bleiben</label>
         <button type="submit" style="width:100%;padding:13px;border:0;border-radius:12px;background:#007AFF;color:white;font:inherit;font-weight:800">Anmelden</button>
         <p role="status" aria-live="polite"></p>
+        <button type="button" data-retry-restore hidden>Gemerkte Anmeldung erneut versuchen</button>
         <div data-verification hidden><button type="button" data-send>Bestätigungs-E-Mail senden</button> <button type="button" data-check>Bestätigung prüfen</button></div>
       </form>`;
       const form=panel.querySelector('form'), status=form.querySelector('[role=status]');
       const submit=form.querySelector('[type=submit]');
       const finish=()=>{if(session?.verified){panel.remove();showAccountControls();resolve(publicUser());}};
+      const retry=form.querySelector('[data-retry-restore]');
+      if(restoreUnavailable){
+        retry.hidden=false;
+        status.textContent='Die Verbindung konnte nicht geprüft werden. Deine gemerkte Anmeldung bleibt gespeichert.';
+      }
+      retry.addEventListener('click',async()=>{
+        retry.disabled=true;submit.disabled=true;
+        try{
+          await restore();
+          if(session?.verified){finish();return;}
+          retry.hidden=!restoreUnavailable;
+          status.textContent=restoreUnavailable?'Die Verbindung ist noch nicht verfügbar.':'Bitte melde dich an.';
+        }finally{retry.disabled=false;submit.disabled=false;}
+      });
       form.addEventListener('submit', async event => {
         event.preventDefault(); submit.disabled=true; status.textContent='Anmeldung wird geprüft …';
         try {

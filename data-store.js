@@ -6,6 +6,7 @@
   const base='https://firestore.googleapis.com/v1/'+root;
   let baseVersion=null, baseSignature=null, progressSignature=null, saving=Promise.resolve();
   let pollStarted=false, dirty=false, conflicted=false;
+  let syncing=false;
   let progressClient='',progressSequence=0,progressAckSequence=0,progressAck=null;
   let localRevision=0;
   const clone=value=>JSON.parse(JSON.stringify(value));
@@ -292,14 +293,14 @@
     return {exportedAt:new Date().toISOString(),projectId:config.supabaseProjectId||config.firebaseProjectId,
       documents:[shared.doc,stats,...additions].filter(Boolean)};
   }
-  function poll(){
-    if(pollStarted)return;pollStarted=true;
-    setInterval(async()=>{
-      if(dirty||!user()?.verified)return;
+  async function refreshFromCloud(){
+      const account=user();
+      if(syncing||dirty||document.hidden||!account?.verified)return;
+      syncing=true;
       const revision=localRevision;
       try{
-        const [remote,additions,personalDoc]=await Promise.all([getBase(),listAdditions(),request('/progress/'+encodeURIComponent(user().uid),{},true)]);
-        if(dirty||revision!==localRevision)return;
+        const [remote,additions,personalDoc]=await Promise.all([getBase(),listAdditions(),request('/progress/'+encodeURIComponent(account.uid),{},true)]);
+        if(user()?.uid!==account.uid||dirty||revision!==localRevision)return;
         baseVersion=remote.doc?.updateTime||null;baseSignature=JSON.stringify(remote.chapters);
         _cache.chapters=withAdditions(remote.chapters,additions);
         if(personalDoc){
@@ -312,8 +313,15 @@
         const view=document.querySelector('.view.active')?.id;
         if(view==='home')window.renderAdminList();
         if(view==='learn-home')window.renderLearnList();
-      }catch(_){status('Cloud derzeit nicht erreichbar. Die geladenen Inhalte bleiben nutzbar.',true);}
-    },30000);
+      }catch(_){if(user()?.uid===account.uid)status('Cloud derzeit nicht erreichbar. Die geladenen Inhalte bleiben nutzbar.',true);}
+      finally{syncing=false;}
+  }
+  function poll(){
+    if(pollStarted)return;pollStarted=true;
+    setInterval(refreshFromCloud,30000);
+    const refreshWhenReady=()=>{if(!document.hidden)void saving.then(refreshFromCloud);};
+    document.addEventListener?.('visibilitychange',refreshWhenReady);
+    window.addEventListener?.('online',refreshWhenReady);
   }
   window.marcelaData=Object.freeze({load,save,retryPending,localBackup,addEntry,importBackup,appendChapterPackage,verifyAndArchive,exportContent,chaptersFromBackup,status});
   window.loadData=load;

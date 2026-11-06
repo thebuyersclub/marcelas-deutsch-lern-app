@@ -1,6 +1,6 @@
 /* Persönlicher Unterricht: Antworten werden ausschließlich am Server bewertet. */
 (function(){'use strict';
- let view=null,owner=null,busy=false,generation=0,controller=null,audio=null,audioURL=null,speechGeneration=0,speechEnd=null,tick=null,lastTick=0;
+ let view=null,owner=null,busy=false,generation=0,controller=null,audio=null,audioURL=null,speechGeneration=0,speechEnd=null,tick=null,lastTick=0,checkingState=false;
  const retention=48*3600000;
  let history=[],translations=[],translating=false,translationBusy=false,translationDraft='',draft='',selected=[],menuOpen=false,chatTimer=null;
  const user=()=>window.marcelaAuth.user(),active=()=>document.getElementById('teacher-view')?.classList.contains('active');
@@ -18,12 +18,14 @@
   const seq=generation,body={operation,chat:true,requestId:crypto.randomUUID()};
   if(['event','review','restart','next'].includes(operation))body.revision=view.revision;
   if(event)body.event={...event,stepId:view.stepId};
-  controller=new AbortController();const timeout=setTimeout(()=>controller?.abort(),55000);
+  const requestController=new AbortController();
+  if(operation!=='state')controller=requestController;
+  const timeout=setTimeout(()=>requestController.abort(),operation==='state'?10000:55000);
   try{
-   const response=await fetch(window.MARCELA_CONFIG.teacherEndpoint,{method:'POST',headers:{...await window.marcelaAuth.headers(),'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal,cache:'no-store'});
+   const response=await fetch(window.MARCELA_CONFIG.teacherEndpoint,{method:'POST',headers:{...await window.marcelaAuth.headers(),'Content-Type':'application/json'},body:JSON.stringify(body),signal:requestController.signal,cache:'no-store'});
    const result=await response.json();if(seq!==generation||user()?.uid!==owner)throw Error('Unterricht wurde geschlossen.');
    if(!response.ok)throw Error(result.error?.message||'Unterricht ist gerade nicht erreichbar.');return result;
-  }finally{clearTimeout(timeout);controller=null;}
+  }finally{clearTimeout(timeout);if(controller===requestController)controller=null;}
  }
  async function send(operation,event,outgoing){
   if(busy)return;stopSpeech();setBusy(true);message('Einen Moment …');
@@ -41,6 +43,20 @@
  async function load(){
   if(busy)return;setBusy(true);message('Unterricht wird geladen …');
   try{view=await request('start');rememberChapterFarewell(view);render();}catch(error){message(error.message);const retry=button('Erneut versuchen',load);retry.disabled=false;document.getElementById('teacher-retry').replaceChildren(retry);}finally{setBusy(false);syncClock();}
+ }
+ async function refreshCourse(){
+  if(!active()||document.hidden||!view||busy||checkingState||translating||draft||selected.length)return;
+  checkingState=true;
+  const current=view;
+  try{
+   const latest=await request('state');
+   if(!active()||document.hidden||busy||translating||draft||selected.length||view!==current||
+      latest.empty||latest.revision<=current.revision)return;
+   view=latest;
+   rememberChapterFarewell(latest);render();syncClock();
+  }catch{
+   // Keep the current screen on temporary connection failures.
+  }finally{checkingState=false;}
  }
  async function speak(slow=false,text=view?.teacher?.de){
   stopSpeech();const seq=speechGeneration;if(!text)return;
@@ -90,6 +106,15 @@
  }
  const localTime=at=>new Date(at).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
  const goodnight=text=>/^(gute nacht|dobrou noc)[.!?]*$/iu.test(text.trim());
+ function currentInstruction(view){
+  if(view.instruction?.de)return view.instruction;
+  if(view.kind!=='free_response')return null;
+  return {
+   de:'Schreib deine Antwort auf Deutsch.'+(view.task?' '+view.task:''),
+   cz:'Vypracuj následující úlohu německy.',
+   needsTranslation:!!view.task
+  };
+ }
  function bubble(item){
   const outer=node('article',undefined,'foxly-bubble foxly-'+item.side);
   outer.append(node('p',item.de));
@@ -144,7 +169,8 @@
   const form=node('form',undefined,'foxly-input-row'),answer=node('input',undefined,'foxly-text-input');
   answer.type='text';if(!translating)answer.maxLength=2000;answer.autocomplete='off';
   answer.setAttribute('enterkeyhint','send');
-  answer.placeholder=translating?'Napiš německy nebo česky…':'Napiš zprávu…';
+  answer.placeholder=translating?'Napiš německy nebo česky…':
+   view?.kind==='free_response'?'Napiš odpověď německy…':'Napiš zprávu…';
   answer.setAttribute('aria-label',answer.placeholder);answer.value=value;
   answer.oninput=()=>onInput(answer.value);
   form.append(answer);sendButton(form);
@@ -265,7 +291,8 @@
    if(!view.endedEarly&&view.status!=='paused'){
     const exercise=view.exercise;
     const taskId=view.sessionId+':task:'+view.stepId;
-    if(view.instruction)remember({id:taskId+':instruction',side:'left',...view.instruction},true,taskId);
+    const instruction=currentInstruction(view);
+    if(instruction)remember({id:taskId+':instruction',side:'left',...instruction},true,taskId);
     remember({id:taskId,side:'left',...view.teacher,
      needsTranslation:!view.stepId.startsWith('linked-practice-')||exercise?.mode==='question',
      prompt:exercise?.prompt||'',promptLang:['words','vocabulary','writing'].includes(exercise?.mode)?'cs':''},true);
@@ -352,8 +379,9 @@
   resize();
   document.addEventListener('visibilitychange',()=>{
    if(document.hidden){stopSpeech();stopClock();}
-   else{if(active()&&pruneHistory()&&!translating)render();syncClock();}
+   else{if(active()&&pruneHistory()&&!translating)render();syncClock();void refreshCourse();}
   });
+  setInterval(refreshCourse,15000);
   const card=document.getElementById('study-card');if(card){card.setAttribute('role','button');card.tabIndex=0;card.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();study();}};}
  }
  window.marcelaTeacher=Object.freeze({open,study});window._sqLearn=open;

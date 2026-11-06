@@ -9,6 +9,40 @@
 <meta name="apple-mobile-web-app-title" content="Deutsch 🇦🇹">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#FAFAF7">
+<script>
+(() => {
+  const key = 'marcela.theme';
+  const preference = window.matchMedia('(prefers-color-scheme: dark)');
+  let manual = null;
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved === 'dark' || saved === 'light') manual = saved;
+  } catch {}
+  const system = () => preference.matches ? 'dark' : 'light';
+  const apply = () => {
+    const theme = manual || system();
+    document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#353638' : '#FAFAF7';
+  };
+  apply();
+  preference.addEventListener('change', apply);
+  document.addEventListener('DOMContentLoaded', () => {
+    let lastTap = null;
+    document.getElementById('wx-card')?.addEventListener('click', () => {
+      const now = performance.now();
+      if (lastTap === null || now - lastTap > 400) { lastTap = now; return; }
+      lastTap = null;
+      const next = (manual || system()) === 'dark' ? 'light' : 'dark';
+      manual = next === system() ? null : next;
+      try {
+        if (manual) localStorage.setItem(key, manual);
+        else localStorage.removeItem(key);
+      } catch {}
+      apply();
+    });
+  }, {once:true});
+})();
+</script>
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDE4MCAxODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDA3QUZGIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMzRDNzU5Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIHJ4PSI0MCIgZmlsbD0idXJsKCNnKSIvPjx0ZXh0IHg9IjkwIiB5PSIxMTUiIGZvbnQtc2l6ZT0iOTAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfh7rmqKs8L3RleHQ+PC9zdmc+">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
@@ -25,17 +59,24 @@
 
 <style>
 :root {
+  color-scheme: light dark;
   /* Core */
-  --bg:#F2F2F7; --bg2:#E5E5EA; --sur:#FFFFFF; --sur2:#F9F9FB;
-  --blue:#007AFF; --bluelt:#EBF3FF; --green:#34C759; --orange:#FF9500;
-  --red:#FF3B30; --purple:#AF52DE; --teal:#5AC8FA;
-  --text:#1C1C1E; --text2:#3C3C43; --muted:#8E8E93;
-  --sep:rgba(60,60,67,0.13); --sh:0 2px 12px rgba(0,0,0,.07);
+  --bg:light-dark(#F2F2F7,#14191c); --bg2:light-dark(#E5E5EA,#353638); --sur:light-dark(#FFFFFF,#292c2d); --sur2:light-dark(#F9F9FB,#393a3b);
+  --blue:light-dark(#007AFF,#c1d0dc); --bluelt:light-dark(#EBF3FF,#353b40); --green:light-dark(#34C759,#a7d4b2); --orange:light-dark(#FF9500,#e2c09a);
+  --red:light-dark(#FF3B30,#ffb4af); --purple:light-dark(#AF52DE,#c9c4d4); --teal:light-dark(#5AC8FA,#bbd1d7);
+  --text:light-dark(#1C1C1E,#f7f7f7); --text2:light-dark(#3C3C43,#dedede); --muted:light-dark(#8E8E93,#bfbfbf);
+  --sep:light-dark(rgba(60,60,67,0.13),#585a5b); --sh:0 2px 12px rgba(0,0,0,.07);
   --shl:0 6px 28px rgba(0,0,0,.11); --r:16px;
   /* Warm Minimal palette */
-  --cream:#FAFAF7; --cream2:#F5F0EB; --cream3:#EDE8E3;
-  --terra:#C47B5A; --terra-lt:#F5EBE4; --terra-dk:#8B4F35;
-  --ink:#1A1714; --ink2:#4A3F38; --ink3:#8C7B72;
+  --cream:light-dark(#FAFAF7,#14191c); --cream2:light-dark(#F5F0EB,#353638); --cream3:light-dark(#EDE8E3,#595b5d);
+  --terra:light-dark(#C47B5A,#d0d0d0); --terra-lt:light-dark(#F5EBE4,#353638); --terra-dk:light-dark(#8B4F35,#dedede);
+  --ink:light-dark(#1A1714,#f7f7f7); --ink2:light-dark(#4A3F38,#dedede); --ink3:light-dark(#8C7B72,#bfbfbf);
+  --action:light-dark(#1a1714,#484849);
+  --action-text:light-dark(#fafaf7,#f7f7f7);
+  --blue-action:light-dark(#007aff,#484849);
+  --red-action:light-dark(#ff3b30,#803d3b);
+  --green-action:light-dark(#34c759,#3e6550);
+  --orange-action:light-dark(#ff9500,#615343);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -46,14 +87,14 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .scroll{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
 
 /* ── TOPBAR ── */
-.topbar{background:rgba(250,250,247,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:52px 18px 12px;border-bottom:1px solid var(--cream3);position:sticky;top:0;z-index:50}
+.topbar{background:light-dark(rgba(250,250,247,.96),#353638);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:52px 18px 12px;border-bottom:1px solid var(--cream3);position:sticky;top:0;z-index:50}
 .topbar-row{display:flex;align-items:center;justify-content:space-between}
 .topbar-title{font-size:28px;font-weight:900;color:var(--ink)}
-.navbar{background:rgba(250,250,247,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:52px 16px 12px;border-bottom:1px solid var(--cream3);display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50}
+.navbar{background:light-dark(rgba(250,250,247,.96),#353638);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:52px 16px 12px;border-bottom:1px solid var(--cream3);display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50}
 .navbar-title{font-size:17px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
 .btn-back{background:none;border:none;color:var(--ink2);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;padding:4px 0;flex-shrink:0;display:flex;align-items:center;gap:2px}
 .btn-inline{background:none;border:none;color:var(--ink2);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;display:inline-flex;align-items:center;gap:4px}
-.btn-icon-circle{width:34px;height:34px;background:var(--ink);color:white;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.btn-icon-circle{width:34px;height:34px;background:var(--action);color:white;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 
 /* ── SPLASH — Warm Minimal ── */
 #splash{background:var(--cream)}
@@ -63,10 +104,10 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .spl-sub{font-size:14px;color:var(--ink3);margin-bottom:24px;font-weight:600}
 /* Ring — Terrakotta */
 .ring-wrap{position:relative;width:100%;margin:0 0 20px;cursor:pointer}
-.ring-row{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.88);border-radius:14px;padding:12px 16px;border:1px solid rgba(255,255,255,.65);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.ring-row{display:flex;align-items:center;gap:14px;background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:12px 16px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .ring-svg-sm{transform:rotate(-90deg);display:block;flex-shrink:0}
 .ring-track{fill:none;stroke:var(--cream3);stroke-width:10}
-.ring-prog{fill:none;stroke-width:10;stroke-linecap:round;stroke-dasharray:175.9;stroke-dashoffset:175.9;transition:stroke-dashoffset .9s ease;stroke:#C47B5A}
+.ring-prog{fill:none;stroke-width:10;stroke-linecap:round;stroke-dasharray:175.9;stroke-dashoffset:175.9;transition:stroke-dashoffset .9s ease;stroke:light-dark(#C47B5A,#bdbdbd)}
 .ring-ctr-info{flex:1}
 .ring-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3)}
 .ring-time{font-size:26px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
@@ -75,8 +116,8 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .ring-pct{font-size:15px;font-weight:800;color:var(--terra);flex-shrink:0}
 /* Stats */
 .stats-row{display:contents}
-.stat-pill{flex:1;background:rgba(255,255,255,.90);border:1px solid rgba(255,255,255,.7);border-radius:14px;padding:12px 8px;text-align:center;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.tr-pill{flex:1;background:rgba(255,255,255,.90);border:1px solid rgba(255,255,255,.7);border-radius:14px;padding:12px 8px;text-align:center;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;transition:transform .12s}
+.stat-pill{flex:1;background:light-dark(rgba(255,255,255,.90),#292c2d);border:1px solid light-dark(rgba(255,255,255,.7),#505253);border-radius:14px;padding:12px 8px;text-align:center;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.tr-pill{flex:1;background:light-dark(rgba(255,255,255,.90),#292c2d);border:1px solid light-dark(rgba(255,255,255,.7),#505253);border-radius:14px;padding:12px 8px;text-align:center;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;transition:transform .12s}
 .tr-pill:active{transform:scale(.96)}
 .tr-pill-ico{display:flex;justify-content:center;margin-bottom:4px}
 .tr-pill-ico svg{width:22px;height:22px;stroke:var(--terra)}
@@ -86,19 +127,19 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .stat-val{font-size:20px;font-weight:900;margin-top:2px;color:var(--ink)}
 .stat-lbl{font-size:10px;font-weight:600;color:var(--ink3);margin-top:1px}
 /* Goal done */
-.goal-banner{display:none;width:100%;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(52,199,89,.25);border-radius:18px;padding:16px 18px;text-align:left;margin-bottom:16px;box-shadow:0 4px 20px rgba(52,199,89,.10),0 1px 4px rgba(30,22,14,.06)}
+.goal-banner{display:none;width:100%;background:light-dark(rgba(255,255,255,.85),#292c2d);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(52,199,89,.25);border-radius:18px;padding:16px 18px;text-align:left;margin-bottom:16px;box-shadow:0 4px 20px rgba(52,199,89,.10),0 1px 4px rgba(30,22,14,.06)}
 .goal-banner.show{display:flex;align-items:center;gap:14px}
 .goal-banner-icon{flex-shrink:0;width:42px;height:42px;border-radius:13px;background:rgba(52,199,89,.08);border:1px solid rgba(52,199,89,.18);display:flex;align-items:center;justify-content:center}
 .goal-banner-title{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:2px}
 .goal-banner-sub{font-size:12px;color:var(--ink3);font-weight:600}
 /* Buttons */
-.btn-primary{width:100%;background:var(--ink);color:var(--cream);border:none;border-radius:14px;padding:17px;font-size:17px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:10px;transition:opacity .15s}
+.btn-primary{width:100%;background:var(--action);color:var(--action-text);border:none;border-radius:14px;padding:17px;font-size:17px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:10px;transition:opacity .15s}
 .btn-primary:active{opacity:.85}
 .btn-secondary{width:100%;background:transparent;color:var(--ink3);border:1px solid var(--cream3);border-radius:14px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
-.btn-danger{background:var(--red);color:white}
+.btn-danger{background:var(--red-action);color:white}
 
 /* ── MINI TIMER (home/learn-home) ── */
-.mini-timer{margin:14px 16px 4px;background:rgba(255,255,255,.90);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid rgba(255,255,255,.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.mini-timer{margin:14px 16px 4px;background:light-dark(rgba(255,255,255,.90),#292c2d);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .mini-ring-wrap{width:46px;height:46px;flex-shrink:0}
 .mini-ring-wrap svg{display:block}
 .mini-info{flex:1}
@@ -111,21 +152,21 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .sec-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:18px 20px 8px}
 /* Admin list style */
 .ch-list{padding:0 16px 90px}
-.ch-card{background:rgba(255,255,255,.92);border-radius:var(--r);padding:15px 16px;margin-bottom:9px;display:flex;align-items:center;gap:13px;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid rgba(255,255,255,.65);cursor:pointer;transition:transform .18s, box-shadow .18s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.ch-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:var(--r);padding:15px 16px;margin-bottom:9px;display:flex;align-items:center;gap:13px;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);cursor:pointer;transition:transform .18s, box-shadow .18s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .ch-card:active{transform:scale(.97)}
 .ch-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .ch-body{flex:1;min-width:0}
 .ch-name{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ch-meta{font-size:12px;font-weight:600;color:var(--muted);margin-top:3px}
 .ch-arr{color:var(--muted);font-size:20px}
-.ch-btn{background:var(--blue);color:white;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;flex-shrink:0}
+.ch-btn{background:var(--blue-action);color:white;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;flex-shrink:0}
 .no-ch{text-align:center;padding:48px 20px;color:var(--muted)}
 .no-ch-icon{font-size:48px;margin-bottom:12px}
 .no-ch-t{font-size:15px;font-weight:800;color:var(--text)}
 .no-ch-s{font-size:13px;margin-top:4px;font-weight:600}
 /* Bento grid — Learn Home */
 .bento-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 90px}
-.bento-card{border-radius:18px;padding:16px;cursor:pointer;transition:transform .18s, box-shadow .18s;border:1px solid rgba(255,255,255,.6);box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08)}
+.bento-card{border-radius:18px;padding:16px;cursor:pointer;transition:transform .18s, box-shadow .18s;border:1px solid light-dark(rgba(255,255,255,.6),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08)}
 .bento-card:active{transform:scale(.97);box-shadow:0 1px 4px rgba(30,22,14,.05)}
 .bento-card.wide{grid-column:span 2;display:flex;align-items:center;gap:14px}
 .bento-ico-wrap{display:flex;align-items:center;margin-bottom:10px;flex-shrink:0}
@@ -137,12 +178,12 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .bento-card.wide .bento-btn{margin-top:0}
 
 /* ── CHAPTER DETAIL ── */
-.practice-banner{margin:14px 16px;background:linear-gradient(135deg,#007AFF,#5AC8FA);border-radius:18px;padding:18px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 18px rgba(0,122,255,.28)}
+.practice-banner{margin:14px 16px;background:linear-gradient(135deg,light-dark(#007AFF,#393a3b),light-dark(#5AC8FA,#484849));border-radius:18px;padding:18px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 18px rgba(0,122,255,.28)}
 .pb-ico{font-size:34px}
 .pb-text{flex:1}
 .pb-title{font-size:17px;font-weight:900;color:white}
 .pb-sub{font-size:12px;color:rgba(255,255,255,.8);margin-top:2px;font-weight:600}
-.pb-btn{background:white;color:var(--terra-dk);border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;flex-shrink:0}
+.pb-btn{background:var(--sur);color:var(--terra-dk);border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;flex-shrink:0}
 /* Segmented */
 .seg{display:flex;background:var(--bg2);border-radius:10px;padding:2px;margin:0 16px 14px}
 .seg-b{flex:1;padding:7px 2px;border:none;background:transparent;border-radius:8px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .18s}
@@ -151,22 +192,22 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .panel{display:none;padding:0 16px 90px}
 .panel.on{display:block}
 /* Add forms */
-.add-card{background:rgba(255,255,255,.92);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid rgba(255,255,255,.65)}
+.add-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253)}
 .add-title{font-size:14px;font-weight:800;margin-bottom:12px}
 .frow{display:flex;gap:10px}
 .frow .fg{flex:1}
 .fg{margin-bottom:10px}
 .fg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px}
 .fc{width:100%;background:var(--bg);border:1.5px solid var(--sep);border-radius:10px;padding:11px 13px;font-size:15px;color:var(--text);font-family:inherit;outline:none;transition:border-color .2s;-webkit-appearance:none}
-.fc:focus{border-color:var(--terra);background:white}
+.fc:focus{border-color:var(--terra);background:var(--sur)}
 textarea.fc{resize:vertical;min-height:68px}
-.btn-add{width:100%;background:var(--blue);color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:2px}
+.btn-add{width:100%;background:var(--blue-action);color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:2px}
 .btn-add:active{opacity:.82}
-.btn-add.orange{background:var(--orange)}
-.btn-add.green{background:var(--green)}
+.btn-add.orange{background:var(--orange-action)}
+.btn-add.green{background:var(--green-action)}
 .btn-add.ghost{background:var(--bg2);color:var(--text2)}
 /* List items */
-.list-card{background:rgba(255,255,255,.92);border-radius:var(--r);box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid rgba(255,255,255,.65);margin-bottom:10px;overflow:hidden}
+.list-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:var(--r);box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);margin-bottom:10px;overflow:hidden}
 .li-row{padding:13px 14px;border-bottom:1px solid var(--sep);display:flex;align-items:flex-start;gap:10px}
 .li-row:last-child{border-bottom:none}
 .li-body{flex:1;min-width:0}
@@ -176,8 +217,8 @@ textarea.fc{resize:vertical;min-height:68px}
 .li-title{font-size:14px;font-weight:800}
 .li-body-text{font-size:13px;color:var(--text2);line-height:1.5;margin-top:3px}
 .li-tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;margin-bottom:4px}
-.li-tag.orange{background:#FFF6EC;color:var(--orange)}
-.li-tag.purple{background:#F5EEFF;color:var(--purple)}
+.li-tag.orange{background:light-dark(#FFF6EC,#333536);color:var(--orange)}
+.li-tag.purple{background:light-dark(#F5EEFF,#303538);color:var(--purple)}
 .li-tag.blue{background:var(--terra-lt);color:var(--terra-dk)}
 .btn-del{background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 4px;flex-shrink:0;display:flex;align-items:center}
 .empty-msg{text-align:center;padding:22px;color:var(--muted);font-size:13px;font-weight:600}
@@ -202,7 +243,7 @@ textarea.fc{resize:vertical;min-height:68px}
 .dir-sel{margin:10px 16px 0;background:var(--sur);border-radius:12px;padding:14px;box-shadow:var(--sh)}
 .dir-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 16px 24px}
-.mode-card{background:rgba(255,255,255,.92);border-radius:18px;padding:22px 12px 18px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid rgba(255,255,255,.65);transition:transform .18s, box-shadow .18s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.mode-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:18px;padding:22px 12px 18px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);transition:transform .18s, box-shadow .18s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .mode-card:active{transform:scale(.96);box-shadow:0 1px 4px rgba(30,22,14,.04)}
 .mode-card.disabled{opacity:.35;pointer-events:none}
 .mode-ico{margin-bottom:12px;display:flex;align-items:center;justify-content:center;color:var(--ink)}
@@ -215,7 +256,7 @@ textarea.fc{resize:vertical;min-height:68px}
 /* ── PRACTICE — Light warm header, dezent ── */
 #practice{background:var(--cream2)}
 .p-topbar{
-  background:rgba(250,248,245,.97);
+  background:light-dark(rgba(250,248,245,.97),#353638);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   padding:52px 18px 10px;
   display:flex;align-items:center;gap:10px;
@@ -230,12 +271,12 @@ textarea.fc{resize:vertical;min-height:68px}
 }
 .p-prog-wrap{flex:1;padding:0 6px}
 .p-prog-bar{height:3px;background:rgba(30,22,14,.08);border-radius:3px;overflow:hidden}
-.p-prog-fill{height:100%;background:linear-gradient(90deg,#C47B5A,#E8A882);border-radius:3px;transition:width .5s ease}
+.p-prog-fill{height:100%;background:linear-gradient(90deg,light-dark(#C47B5A,#bdbdbd),light-dark(#E8A882,#e2e2e2));border-radius:3px;transition:width .5s ease}
 .p-count{font-size:11px;font-weight:700;color:var(--ink3);flex-shrink:0;font-variant-numeric:tabular-nums}
 .p-end-btn{background:none;border:none;color:var(--ink3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;padding:0 0 0 6px;opacity:.6}
 /* Timer strip — same light tone, very compact */
 .p-timer-strip{
-  background:rgba(250,248,245,.97);
+  background:light-dark(rgba(250,248,245,.97),#353638);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   padding:5px 18px 8px;
   display:flex;align-items:center;gap:8px;
@@ -248,7 +289,7 @@ textarea.fc{resize:vertical;min-height:68px}
 .p-mode-lbl{
   text-align:center;font-size:10px;font-weight:700;
   color:var(--ink3);text-transform:uppercase;letter-spacing:1.5px;
-  background:rgba(250,248,245,.97);
+  background:light-dark(rgba(250,248,245,.97),#353638);
   padding:6px 16px 10px;margin:0;
   border-bottom:1px solid var(--cream3);
   opacity:.8;
@@ -269,7 +310,7 @@ textarea.fc{resize:vertical;min-height:68px}
 .fc-inner.flipped{transform:rotateY(180deg)}
 .fc-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;box-shadow:var(--shl)}
 .fc-front{background:var(--sur)}
-.fc-back{background:linear-gradient(135deg,#34C759,#30D158);transform:rotateY(180deg)}
+.fc-back{background:linear-gradient(135deg,light-dark(#34C759,#393a3b),light-dark(#30D158,#484849));transform:rotateY(180deg)}
 .fc-badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:4px 10px;border-radius:20px;margin-bottom:12px}
 .fc-front .fc-badge{background:var(--terra-lt);color:var(--terra-dk)}
 .fc-back .fc-badge{background:rgba(255,255,255,.25);color:white}
@@ -281,16 +322,16 @@ textarea.fc{resize:vertical;min-height:68px}
 .fc-btns{display:flex;gap:12px;width:calc(100% - 32px);max-width:360px}
 .fc-btn{flex:1;padding:14px;border-radius:14px;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;transition:transform .1s}
 .fc-btn:active{transform:scale(.96)}
-.fc-wrong{background:#FFF0EE;color:var(--red)}
-.fc-right{background:#F5EBE4;color:var(--terra-dk)}
+.fc-wrong{background:light-dark(#FFF0EE,#442d2d);color:var(--red)}
+.fc-right{background:light-dark(#F5EBE4,#333536);color:var(--terra-dk)}
 
 /* MC options */
 .mc-opts{width:calc(100% - 32px);max-width:360px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
 .mc-opt{background:var(--sur);border:2px solid var(--sep);border-radius:14px;padding:14px 18px;font-size:15px;font-weight:700;color:var(--text);cursor:pointer;text-align:left;font-family:inherit;box-shadow:var(--sh);transition:all .15s}
 .mc-opt:active{transform:scale(.98)}
-.mc-opt.correct{background:#EEFAF2;border-color:var(--green);color:var(--green)}
-.mc-opt.wrong{background:#FFF0EE;border-color:var(--red);color:var(--red)}
-.mc-opt.reveal{background:#F0FAF4;border-color:rgba(52,199,89,.4)}
+.mc-opt.correct{background:light-dark(#EEFAF2,#263b31);border-color:var(--green);color:var(--green)}
+.mc-opt.wrong{background:light-dark(#FFF0EE,#442d2d);border-color:var(--red);color:var(--red)}
+.mc-opt.reveal{background:light-dark(#F0FAF4,#263b31);border-color:rgba(52,199,89,.4)}
 
 /* Order chips */
 .order-preview{min-height:44px;background:var(--bg);border-radius:12px;padding:10px 14px;font-size:16px;font-weight:700;color:var(--text);margin:0 auto 8px;width:calc(100% - 32px);max-width:360px;word-break:break-word;line-height:1.5}
@@ -313,11 +354,11 @@ textarea.fc{resize:vertical;min-height:68px}
 .in-area{width:calc(100% - 32px);max-width:360px;margin:0 auto 12px}
 .big-in{width:100%;background:var(--sur);border:2px solid var(--sep);border-radius:14px;padding:14px 18px;font-size:17px;font-weight:700;color:var(--text);font-family:inherit;outline:none;text-align:center;transition:border-color .2s;-webkit-appearance:none;box-shadow:var(--sh)}
 .big-in:focus{border-color:var(--terra)}
-.big-in.ok{border-color:var(--green);color:var(--green);background:#EEFAF2}
-.big-in.bad{border-color:var(--red);color:var(--red);background:#FFF0EE}
+.big-in.ok{border-color:var(--green);color:var(--green);background:light-dark(#EEFAF2,#263b31)}
+.big-in.bad{border-color:var(--red);color:var(--red);background:light-dark(#FFF0EE,#442d2d)}
 
 /* Action buttons in practice */
-.btn-check{width:calc(100% - 32px);max-width:360px;background:var(--ink);color:var(--cream);border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(26,23,20,.2);margin-bottom:8px}
+.btn-check{width:calc(100% - 32px);max-width:360px;background:var(--action);color:var(--action-text);border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(26,23,20,.2);margin-bottom:8px}
 .btn-skip{width:calc(100% - 32px);max-width:360px;background:var(--bg2);color:var(--text2);border:none;border-radius:14px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
 .btn-undo{background:var(--bg2);color:var(--text2);border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin:0 auto 8px;display:block}
 
@@ -331,7 +372,7 @@ textarea.fc{resize:vertical;min-height:68px}
 .r-pct{font-size:34px;font-weight:900}
 .r-frac{font-size:12px;font-weight:700;color:var(--muted)}
 .r-btns{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
-.r-btn1{background:var(--blue);color:white;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(0,122,255,.25)}
+.r-btn1{background:var(--blue-action);color:white;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(0,122,255,.25)}
 .r-btn2{background:var(--sur);color:var(--text);border:1.5px solid var(--sep);border-radius:14px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
 
 /* ── FEEDBACK OVERLAY ── */
@@ -342,7 +383,7 @@ textarea.fc{resize:vertical;min-height:68px}
 .fb-emoji{margin-bottom:8px;display:flex;justify-content:center}
 .fb-title{font-size:20px;font-weight:900;margin-bottom:6px}
 .fb-answer{font-size:13px;color:var(--ink3);font-weight:600;margin-bottom:20px;white-space:pre-line;line-height:1.6}
-.fb-btn{background:var(--blue);color:white;border:none;border-radius:12px;padding:13px 36px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+.fb-btn{background:var(--blue-action);color:white;border:none;border-radius:12px;padding:13px 36px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
 
 /* ── MODALS ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:flex-end;justify-content:center}
@@ -359,20 +400,20 @@ textarea.fc{resize:vertical;min-height:68px}
 #toast.err{background:rgba(255,59,48,.9)}
 
 /* ── LOADING OVERLAY ── */
-#loading{position:fixed;inset:0;background:white;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
-#loading .l-ico{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#007AFF,#34C759);display:flex;align-items:center;justify-content:center;font-size:36px}
+#loading{position:fixed;inset:0;background:var(--sur);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#loading .l-ico{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,light-dark(#007AFF,#393a3b),light-dark(#34C759,#484849));display:flex;align-items:center;justify-content:center;font-size:36px}
 #loading .l-title{font-size:22px;font-weight:900;color:var(--text)}
 #loading .l-sub{font-size:14px;color:var(--muted);font-weight:600}
 #loading .l-bar{width:200px;height:4px;background:var(--bg2);border-radius:4px;overflow:hidden}
-#loading .l-fill{height:100%;width:0;background:var(--blue);border-radius:4px;animation:lbar 1.4s ease-in-out infinite}
+#loading .l-fill{height:100%;width:0;background:var(--blue-action);border-radius:4px;animation:lbar 1.4s ease-in-out infinite}
 @keyframes lbar{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}
 
 /* ── TRANSLATOR ── */
-.tr-dir-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:rgba(255,255,255,.9);border-radius:16px;padding:12px 16px;border:1px solid rgba(255,255,255,.65);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08)}
+.tr-dir-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:light-dark(rgba(255,255,255,.9),#292c2d);border-radius:16px;padding:12px 16px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08)}
 .tr-lang-lbl{font-size:14px;font-weight:800;color:var(--ink);flex:1;text-align:center}
-.tr-swap-btn{width:38px;height:38px;background:var(--ink);color:white;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform .3s}
+.tr-swap-btn{width:38px;height:38px;background:var(--action);color:white;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform .3s}
 .tr-swap-btn:active{transform:rotate(180deg)}
-.tr-box{background:rgba(255,255,255,.92);border-radius:18px;padding:16px;margin-bottom:10px;border:1px solid rgba(255,255,255,.65);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08)}
+.tr-box{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:18px;padding:16px;margin-bottom:10px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08)}
 .tr-out-box{border:1px solid rgba(196,123,90,.2);background:rgba(245,235,228,.4)}
 .tr-box-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);margin-bottom:10px}
 .tr-input{width:100%;background:transparent;border:none;outline:none;font-size:17px;font-weight:600;color:var(--ink);font-family:inherit;resize:none;line-height:1.6;min-height:80px}
@@ -380,7 +421,7 @@ textarea.fc{resize:vertical;min-height:68px}
 .tr-box-actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--cream3)}
 .tr-speak-btn,.tr-clear-btn,.tr-copy-btn{background:none;border:none;color:var(--ink3);cursor:pointer;padding:4px;display:flex;align-items:center;border-radius:8px}
 .tr-speak-btn:active,.tr-clear-btn:active,.tr-copy-btn:active{background:var(--cream3)}
-.tr-translate-btn{width:100%;background:var(--ink);color:var(--cream);border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
+.tr-translate-btn{width:100%;background:var(--action);color:var(--action-text);border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
 .tr-translate-btn:active{opacity:.85}
 .tr-translate-btn.loading{opacity:.6;pointer-events:none}
 .tr-save-row{margin-top:12px;padding-top:12px;border-top:1px solid rgba(196,123,90,.15);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -411,8 +452,8 @@ textarea.fc{resize:vertical;min-height:68px}
 .clock-static{font-size:18px;font-weight:800;color:var(--text);white-space:nowrap}
 .clock-input{width:120px;background:var(--sur);border:2px solid var(--sep);border-radius:12px;padding:12px 10px;font-size:16px;font-weight:700;color:var(--text);font-family:inherit;outline:none;text-align:center;transition:border-color .2s;-webkit-appearance:none}
 .clock-input:focus{border-color:var(--teal)}
-.clock-input.ok{border-color:var(--green);color:var(--green);background:#EEFAF2}
-.clock-input.bad{border-color:var(--red);color:var(--red);background:#FFF0EE}
+.clock-input.ok{border-color:var(--green);color:var(--green);background:light-dark(#EEFAF2,#263b31)}
+.clock-input.bad{border-color:var(--red);color:var(--red);background:light-dark(#FFF0EE,#442d2d)}
 
 /* ── WEATHER WEEK ── */
 .wx-day{display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 2px}
@@ -423,9 +464,9 @@ textarea.fc{resize:vertical;min-height:68px}
 .wx-day.today .wx-day-name{color:var(--terra);font-weight:900}
 
 /* ── INSTALL BANNER ── */
-#install-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;padding:12px 16px 28px;background:white;border-top:1px solid var(--sep);box-shadow:0 -4px 24px rgba(0,0,0,.1)}
+#install-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;padding:12px 16px 28px;background:var(--sur);border-top:1px solid var(--sep);box-shadow:0 -4px 24px rgba(0,0,0,.1)}
 .ib-inner{display:flex;align-items:center;gap:12px;max-width:480px;margin:0 auto}
-.ib-ico{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#007AFF,#34C759);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.ib-ico{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,light-dark(#007AFF,#393a3b),light-dark(#34C759,#484849));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
 .ib-text{flex:1}
 .ib-title{font-size:14px;font-weight:800}
 .ib-sub{font-size:12px;font-weight:600;color:var(--muted);margin-top:2px}
@@ -434,15 +475,15 @@ textarea.fc{resize:vertical;min-height:68px}
 
 /* PATCH V2: Grammatik Theorie/Praxis + Tabellenübungen */
 .grammar-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 0 8px}
-.grammar-menu-card{background:rgba(255,255,255,.92);border-radius:18px;padding:18px 14px;box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);border:1px solid rgba(255,255,255,.65);cursor:pointer;transition:transform .15s}
+.grammar-menu-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:18px;padding:18px 14px;box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);cursor:pointer;transition:transform .15s}
 .grammar-menu-card:active{transform:scale(.97)}
 .grammar-menu-ico{font-size:30px;margin-bottom:8px}.grammar-menu-title{font-size:16px;font-weight:900;color:var(--ink)}
 .grammar-menu-sub{font-size:12px;font-weight:600;color:var(--ink3);line-height:1.35;margin-top:4px}.grammar-menu-sub .cz{display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-top:3px}
-.gt-admin-grid{display:grid;gap:8px;overflow-x:auto;padding-bottom:4px}.gt-admin-cell{min-width:88px;background:var(--bg);border:1px solid var(--sep);border-radius:10px;padding:7px}.gt-admin-cell.black{background:#1A1714;color:white}
-.gt-admin-cell select,.gt-admin-cell input{width:100%;font-family:inherit;font-size:11px;border:1px solid var(--sep);border-radius:7px;padding:5px;margin-bottom:5px;background:white;color:var(--text)}.gt-admin-cell.black input,.gt-admin-cell.black select{background:#2C2722;color:white;border-color:#4A3F38}
+.gt-admin-grid{display:grid;gap:8px;overflow-x:auto;padding-bottom:4px}.gt-admin-cell{min-width:88px;background:var(--bg);border:1px solid var(--sep);border-radius:10px;padding:7px}.gt-admin-cell.black{background:light-dark(#1A1714,#202222);color:white}
+.gt-admin-cell select,.gt-admin-cell input{width:100%;font-family:inherit;font-size:11px;border:1px solid var(--sep);border-radius:7px;padding:5px;margin-bottom:5px;background:var(--sur);color:var(--text)}.gt-admin-cell.black input,.gt-admin-cell.black select{background:light-dark(#2C2722,#dedede);color:white;border-color:light-dark(#4A3F38,#dedede)}
 .gt-practice-wrap{width:calc(100% - 24px);max-width:760px;overflow-x:auto;margin:0 auto 14px;background:var(--sur);border-radius:18px;padding:10px;box-shadow:var(--shl)}.gt-practice-table{border-collapse:collapse;width:100%;min-width:420px}
-.gt-practice-table td{border:1px solid var(--sep);min-width:78px;height:48px;text-align:center;padding:6px;font-size:14px;font-weight:800}.gt-black{background:#1A1714;color:white}.gt-white{background:white;color:var(--text)}
-.gt-white input{width:100%;border:2px solid var(--sep);border-radius:9px;padding:9px 7px;font-family:inherit;font-size:14px;font-weight:800;text-align:center;outline:none}.gt-white input:focus{border-color:var(--terra)}.gt-white input.ok{border-color:var(--green);background:#EEFAF2;color:var(--green)}.gt-white input.bad{border-color:var(--red);background:#FFF0EE;color:var(--red)}
+.gt-practice-table td{border:1px solid var(--sep);min-width:78px;height:48px;text-align:center;padding:6px;font-size:14px;font-weight:800}.gt-black{background:light-dark(#1A1714,#202222);color:white}.gt-white{background:var(--sur);color:var(--text)}
+.gt-white input{width:100%;border:2px solid var(--sep);border-radius:9px;padding:9px 7px;font-family:inherit;font-size:14px;font-weight:800;text-align:center;outline:none}.gt-white input:focus{border-color:var(--terra)}.gt-white input.ok{border-color:var(--green);background:light-dark(#EEFAF2,#263b31);color:var(--green)}.gt-white input.bad{border-color:var(--red);background:light-dark(#FFF0EE,#442d2d);color:var(--red)}
 
 
 
@@ -518,6 +559,26 @@ textarea.fc{resize:vertical;min-height:68px}
   #wx-card{padding:9px 9px !important;}
 }
 
+
+/* The active palette is shared by every view, including Foxly. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+#wx-card { touch-action: manipulation; }
+[data-theme="dark"] :is(body, #splash) { background: linear-gradient(#3c4143,#14191c); }
+[data-theme="dark"] .bento-btn { background: var(--action) !important; }
+[data-theme="dark"] .bento-ico-wrap svg { stroke: var(--ink2); }
+[data-theme="dark"] :is(#marcela-login, #marcela-login form, #marcela-signout, #marcela-save-status, #account-tools) {
+  background: var(--sur) !important;
+  color: var(--text) !important;
+}
+[data-theme="dark"] #marcela-login form input:not([type="checkbox"]) { background: var(--sur2); color: var(--text); }
+[data-theme="dark"] #marcela-login form button[type="submit"] { background: var(--action) !important; }
+[data-theme="dark"] #marcela-signout { border-color: var(--sep) !important; }
+[data-theme="dark"] #marcela-save-status { border: 1px solid var(--sep); }
+[data-theme="dark"] #toast.ok { background: #345443; }
+[data-theme="dark"] #toast.err { background: #713c3a; }
+[data-theme="dark"] .tr-out-box { background: var(--sur2); border-color: var(--sep); }
+[data-theme="dark"] .p-prog-bar { background: var(--sep); }
 </style>
 </head>
 <body>
@@ -567,7 +628,7 @@ textarea.fc{resize:vertical;min-height:68px}
     <div id="start-dashboard" style="display:grid;grid-template-columns:2fr 1fr;gap:8px;width:100%;margin:4px 0 16px">
 
       <!-- WETTER links: exakt so hoch wie Datum + Übersetzer rechts -->
-      <div id="wx-card" style="grid-row:1/3;background:rgba(255,255,255,.88);border-radius:14px;padding:14px 16px;border:1px solid rgba(255,255,255,.65);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">
+      <div id="wx-card" style="grid-row:1/3;background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:14px 16px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-bottom:8px" id="wx-location">Standort wird geladen…</div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <div id="wx-icon" style="font-size:28px;flex-shrink:0">⏳</div>
@@ -586,7 +647,7 @@ textarea.fc{resize:vertical;min-height:68px}
       </div>
 
       <!-- RECHTS oben: Datum -->
-      <div id="date-card" style="background:rgba(255,255,255,.88);border-radius:14px;padding:12px 10px;border:1px solid rgba(255,255,255,.65);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+      <div id="date-card" style="background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:12px 10px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
         <div id="date-day" style="font-size:32px;font-weight:900;color:var(--ink);line-height:1">--</div>
         <div id="date-month" style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px"></div>
         <div style="height:1px;background:var(--cream3);width:100%;margin:6px 0"></div>
@@ -617,7 +678,7 @@ textarea.fc{resize:vertical;min-height:68px}
         </div>
       </div>
 
-      <div id="horoscope-card" style="grid-column:2;background:rgba(255,255,255,.88);border-radius:14px;padding:10px 10px;border:1px solid rgba(255,255,255,.65);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:default">
+      <div id="horoscope-card" style="grid-column:2;background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:10px 10px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:default">
         <div id="last-exam-card" style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3)">Letzte Prüfung</div>
@@ -638,7 +699,7 @@ textarea.fc{resize:vertical;min-height:68px}
 
     <div class="goal-banner" id="goal-banner">
       <div class="goal-banner-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="light-dark(#34C759,#79a98a)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
       </div>
       <div>
         <div class="goal-banner-title">Tagesziel erreicht!</div>
@@ -664,8 +725,8 @@ textarea.fc{resize:vertical;min-height:68px}
   <div class="scroll">
     <div class="mini-timer">
       <svg class="mini-ring-wrap" width="46" height="46" viewBox="0 0 46 46">
-        <circle cx="23" cy="23" r="18" fill="none" stroke="#E5E5EA" stroke-width="5" transform="rotate(-90 23 23)"/>
-        <circle id="mini-prog-learn" cx="23" cy="23" r="18" fill="none" stroke="#C47B5A" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 23 23)" style="transition:stroke-dashoffset .8s"/>
+        <circle cx="23" cy="23" r="18" fill="none" stroke="light-dark(#E5E5EA,#555759)" stroke-width="5" transform="rotate(-90 23 23)"/>
+        <circle id="mini-prog-learn" cx="23" cy="23" r="18" fill="none" stroke="light-dark(#C47B5A,#bdbdbd)" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 23 23)" style="transition:stroke-dashoffset .8s"/>
       </svg>
       <div class="mini-info">
         <div class="mini-title">Tagesziel — 1 Stunde</div>
@@ -691,8 +752,8 @@ textarea.fc{resize:vertical;min-height:68px}
   <div class="scroll">
     <div class="mini-timer">
       <svg class="mini-ring-wrap" width="46" height="46" viewBox="0 0 46 46">
-        <circle cx="23" cy="23" r="18" fill="none" stroke="#E5E5EA" stroke-width="5" transform="rotate(-90 23 23)"/>
-        <circle id="mini-prog-home" cx="23" cy="23" r="18" fill="none" stroke="#C47B5A" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 23 23)" style="transition:stroke-dashoffset .8s"/>
+        <circle cx="23" cy="23" r="18" fill="none" stroke="light-dark(#E5E5EA,#555759)" stroke-width="5" transform="rotate(-90 23 23)"/>
+        <circle id="mini-prog-home" cx="23" cy="23" r="18" fill="none" stroke="light-dark(#C47B5A,#bdbdbd)" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 23 23)" style="transition:stroke-dashoffset .8s"/>
       </svg>
       <div class="mini-info">
         <div class="mini-title">Tagesziel — 1 Stunde</div>
@@ -728,7 +789,7 @@ textarea.fc{resize:vertical;min-height:68px}
       </div>
       <div style="display:flex;gap:8px">
         <input class="fc" id="mini-tr-input" placeholder="Text eingeben…" style="flex:1" onkeydown="if(event.key==='Enter')doMiniTranslate()"/>
-        <button class="btn-add" style="width:auto;padding:11px 16px;margin:0;background:var(--ink)" onclick="doMiniTranslate()">
+        <button class="btn-add" style="width:auto;padding:11px 16px;margin:0;background:var(--action)" onclick="doMiniTranslate()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </button>
       </div>
@@ -879,70 +940,70 @@ textarea.fc{resize:vertical;min-height:68px}
         <div class="mode-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
         <div class="mode-name">Übersetzer</div>
         <div class="mode-desc">🇦🇹 ↔ 🇨🇿</div>
-        <div class="mode-bar" style="background:#5AC8FA"></div>
+        <div class="mode-bar" style="background:light-dark(#5AC8FA,#8c9fa5)"></div>
       </div>
       <div class="mode-card" id="mode-flashcard" onclick="startPractice('flashcard')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="mode-name">Karteikarte</div>
         <div class="mode-desc">Aufdecken & einschätzen<span class="cz">Odkrýt a zhodnotit</span></div>
-        <div class="mode-bar" style="background:#007AFF"></div>
+        <div class="mode-bar" style="background:light-dark(#007AFF,#7f8990)"></div>
       </div>
       <div class="mode-card" id="mode-mc" onclick="startPractice('mc')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="mode-name">Multiple Choice</div>
         <div class="mode-desc">Richtige Antwort wählen<span class="cz">Vybrat správnou odpověď</span></div>
-        <div class="mode-bar" style="background:#34C759"></div>
+        <div class="mode-bar" style="background:light-dark(#34C759,#79a98a)"></div>
       </div>
       <div class="mode-card" id="mode-order" onclick="startPractice('order')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg></div><div class="mode-name">Satzbau</div>
         <div class="mode-desc">Wörter richtig ordnen<span class="cz">Seřadit slova správně</span></div>
-        <div class="mode-bar" style="background:#FF9500"></div>
+        <div class="mode-bar" style="background:light-dark(#FF9500,#c4a17a)"></div>
       </div>
       <div class="mode-card" id="mode-sentences" data-action="mode-card">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg></div><div class="mode-name">Sätze</div>
         <div class="mode-desc">Im Kopf übersetzen und aufdecken<span class="cz">Přeložit v duchu a odkrýt překlad</span></div>
-        <div class="mode-bar" style="background:#007AFF"></div>
+        <div class="mode-bar" style="background:light-dark(#007AFF,#7f8990)"></div>
       </div>
       <div class="mode-card" id="mode-sentorder" onclick="startPractice('sentorder')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div><div class="mode-name">Satz-Reihenfolge</div>
         <div class="mode-desc">Sätze eines Absatzes ordnen<span class="cz">Seřadit věty v odstavci</span></div>
-        <div class="mode-bar" style="background:#C47B5A"></div>
+        <div class="mode-bar" style="background:light-dark(#C47B5A,#bdbdbd)"></div>
       </div>
       <div class="mode-card" id="mode-fill" onclick="startPractice('fill')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="8" y1="18" x2="21" y2="18"/></svg></div><div class="mode-name">Lückentext</div>
         <div class="mode-desc">Richtiges Wort wählen<span class="cz">Vybrat správné slovo</span></div>
-        <div class="mode-bar" style="background:#AF52DE"></div>
+        <div class="mode-bar" style="background:light-dark(#AF52DE,#a39aaa)"></div>
       </div>
       <div class="mode-card" id="mode-typing" onclick="startPractice('typing')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="mode-name">Schreiben</div>
         <div class="mode-desc">Übersetzung eintippen<span class="cz">Napsat překlad</span></div>
-        <div class="mode-bar" style="background:#FF2D55"></div>
+        <div class="mode-bar" style="background:light-dark(#FF2D55,#ab818a)"></div>
       </div>
       <div class="mode-card" id="mode-qa" onclick="startPractice('qa')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></div><div class="mode-name">Frage-Antwort</div>
         <div class="mode-desc">Passende Frage oder Antwort schreiben<span class="cz">Napsat správnou otázku nebo odpověď</span></div>
-        <div class="mode-bar" style="background:#5AC8FA"></div>
+        <div class="mode-bar" style="background:light-dark(#5AC8FA,#8c9fa5)"></div>
       </div>
       <div class="mode-card" id="mode-clock" onclick="startPractice('clock')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="mode-name">Uhrzeit</div>
         <div class="mode-desc">Uhrzeit auf Deutsch schreiben<span class="cz">Napsat čas německy</span></div>
-        <div class="mode-bar" style="background:#C47B5A"></div>
+        <div class="mode-bar" style="background:light-dark(#C47B5A,#bdbdbd)"></div>
       </div>
       <div class="mode-card" id="mode-grammar" onclick="showGrammar()">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div class="mode-name">Grammatik</div>
         <div class="mode-desc">Regeln nachlesen<span class="cz">Přečíst si pravidla</span></div>
-        <div class="mode-bar" style="background:#34C759"></div>
+        <div class="mode-bar" style="background:light-dark(#34C759,#79a98a)"></div>
       </div>
 
       <div class="mode-card" id="mode-lessoncheck" onclick="startLessonCheck()">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
         <div class="mode-name">Lektionsüberprüfung</div>
         <div class="mode-desc" id="lessoncheck-record">Noch kein Rekord<span class="cz">Smíšený test lekce</span></div>
-        <div class="mode-bar" style="background:#1A1714"></div>
+        <div class="mode-bar" style="background:light-dark(#1A1714,#202222)"></div>
       </div>
       <div class="mode-card" id="mode-weak" onclick="startWeakPractice()">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
         <div class="mode-name">Schwachstellen</div>
         <div class="mode-desc" id="weak-count-lbl">0 Fragen zum Üben<span class="cz">Procvičování slabých míst</span></div>
-        <div class="mode-bar" style="background:#FF3B30"></div>
+        <div class="mode-bar" style="background:light-dark(#FF3B30,#ce827e)"></div>
       </div>
     </div>
     <div class="mode-hint" id="mode-hint"></div>
@@ -1189,10 +1250,10 @@ textarea.fc{resize:vertical;min-height:68px}
   DESIGN-SYSTEM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Palette: "Warm Minimal" — Creme, Terrakotta, Fast-Schwarz
-    --cream/#FAFAF7   Hintergrund Splash
-    --terra/#C47B5A   Akzentfarbe (Ring, Icons, Links)
-    --ink/#1A1714     Primärtext, Buttons
-    --ink3/#8C7B72    Sekundärtext, Labels
+    --cream/light-dark(#FAFAF7,#14191c)   Hintergrund Splash
+    --terra/light-dark(#C47B5A,#bdbdbd)   Akzentfarbe (Ring, Icons, Links)
+    --ink/light-dark(#1A1714,#202222)     Primärtext, Buttons
+    --ink3/light-dark(#8C7B72,#bfbfbf)    Sekundärtext, Labels
   Font: Nunito (Google Fonts), 400–900
   Icons: Lucide-Stil SVG (1.5px Stroke, rounded, keine Emojis außer Flaggen + 🎉)
   Cards: border-radius 14px, Glassmorphism-Schatten (2-layer)
@@ -1531,7 +1592,7 @@ function refreshTimers() {
   // Mini rings
   ['home', 'learn'].forEach(id => {
     const mp = document.getElementById('mini-prog-' + id);
-    if (mp) { mp.style.strokeDashoffset = 113.1 * (1 - pct); mp.style.stroke = pct >= 1 ? '#34C759' : '#C47B5A'; }
+    if (mp) { mp.style.strokeDashoffset = 113.1 * (1 - pct); mp.style.stroke = pct >= 1 ? 'light-dark(#34C759,#79a98a)' : 'light-dark(#C47B5A,#bdbdbd)'; }
     const mt = document.getElementById('mini-time-' + id);
     if (mt) { mt.textContent = rem === 0 ? 'Ziel erreicht! 🎉' : fmt(rem); mt.classList.toggle('done', rem === 0); }
   });
@@ -1614,7 +1675,7 @@ function cdBack() {
 // ═══════════════════════════════════════════════════════════
 //  CHAPTER LISTS
 // ═══════════════════════════════════════════════════════════
-const CH_COLORS = ['#007AFF','#34C759','#FF9500','#AF52DE','#FF3B30','#5AC8FA','#FF2D55','#FFCC00'];
+const CH_COLORS = ['light-dark(#007AFF,#7f8990)','light-dark(#34C759,#79a98a)','light-dark(#FF9500,#c4a17a)','light-dark(#AF52DE,#a39aaa)','light-dark(#FF3B30,#ce827e)','light-dark(#5AC8FA,#8c9fa5)','light-dark(#FF2D55,#ab818a)','light-dark(#FFCC00,#b1a085)'];
 const CH_EMOJIS = ['●','●','●','●','●','●','●','●']; // unused, replaced below
 
 // Bento background colors — warm, soft
@@ -1624,8 +1685,8 @@ const CH_EMOJIS = ['●','●','●','●','●','●','●','●']; // unused, 
 //          renderLearnList() → Bento-Grid (jede 3. Karte breit).
 //          Farben: BENTO_BG[i%8] für Hintergrund, BENTO_BTN[i%8] für Button.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const BENTO_BG = ['#EBF3FF','#EEFAF2','#FFF6EC','#F5EEFF','#FFF0EE','#E1F5EE','#FAEEDA','#F5EBE4'];
-const BENTO_BTN = ['#007AFF','#34C759','#FF9500','#AF52DE','#FF3B30','#0F6E56','#BA7517','#C47B5A'];
+const BENTO_BG = ['light-dark(#EBF3FF,#303538)','light-dark(#EEFAF2,#263b31)','light-dark(#FFF6EC,#333536)','light-dark(#F5EEFF,#303538)','light-dark(#FFF0EE,#442d2d)','light-dark(#E1F5EE,#333536)','light-dark(#FAEEDA,#333536)','light-dark(#F5EBE4,#333536)'];
+const BENTO_BTN = ['light-dark(#007AFF,#7f8990)','light-dark(#34C759,#79a98a)','light-dark(#FF9500,#c4a17a)','light-dark(#AF52DE,#a39aaa)','light-dark(#FF3B30,#ce827e)','light-dark(#0F6E56,#819b8c)','light-dark(#BA7517,#aa9782)','light-dark(#C47B5A,#bdbdbd)'];
 
 function renderLearnList() {
   refreshTimers();
@@ -3016,8 +3077,8 @@ function handleWeakResult(ok) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // FEEDBACK
 function showFeedback(ok, answer) {
-  const checkSVG = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>';
-  const crossSVG = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+  const checkSVG = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="light-dark(#34C759,#79a98a)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>';
+  const crossSVG = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="light-dark(#FF3B30,#ce827e)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
   document.getElementById('fb-emoji').innerHTML = ok ? checkSVG : crossSVG;
   document.getElementById('fb-title').textContent = ok ? 'Richtig!' : 'Nicht ganz…';
   const fbAns = document.getElementById('fb-answer');
@@ -3025,7 +3086,7 @@ function showFeedback(ok, answer) {
     const motiv = _motivTexts[_motivIdx % _motivTexts.length];
     _motivIdx++;
     fbAns.innerHTML = 'Richtige Antwort: ' + answer
-      + '<br><span style="color:#C47B5A;font-style:italic;font-size:13px;margin-top:6px;display:block">' + motiv + '</span>';
+      + '<br><span style="color:light-dark(#C47B5A,#bdbdbd);font-style:italic;font-size:13px;margin-top:6px;display:block">' + motiv + '</span>';
   } else {
     fbAns.textContent = 'Weiter so, Marcela!';
   }
@@ -3112,7 +3173,7 @@ function showResult() {
   const totalCards = _pTotalCards + _pQ.length;
   const rounds = _pRound;
   const pct = totalCards ? Math.round(totalScore / totalCards * 100) : 0;
-  const col = pct >= 80 ? '#34C759' : pct >= 50 ? '#FF9500' : '#FF3B30';
+  const col = pct >= 80 ? 'light-dark(#34C759,#79a98a)' : pct >= 50 ? 'light-dark(#FF9500,#c4a17a)' : 'light-dark(#FF3B30,#ce827e)';
   const trophySVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
   const starSVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
   const muscSVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
@@ -3127,7 +3188,7 @@ function showResult() {
     + '<div class="r-title">' + msg + '</div>'
     + '<div class="r-sub">' + totalScore + ' von ' + totalCards + ' richtig' + (rounds > 1 ? ' · ' + rounds + ' Runden' : '') + '</div>'
     + '<div class="r-ring"><svg width="130" height="130" viewBox="0 0 130 130">'
-    + '<circle cx="65" cy="65" r="54" fill="none" stroke="#E5E5EA" stroke-width="10" transform="rotate(-90 65 65)"/>'
+    + '<circle cx="65" cy="65" r="54" fill="none" stroke="light-dark(#E5E5EA,#555759)" stroke-width="10" transform="rotate(-90 65 65)"/>'
     + '<circle cx="65" cy="65" r="54" fill="none" stroke="' + col + '" stroke-width="10" stroke-linecap="round"'
     + ' stroke-dasharray="' + c2.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '" transform="rotate(-90 65 65)"'
     + ' style="transition:stroke-dashoffset 1s ease"/>'
@@ -3215,7 +3276,7 @@ function showToast(msg, type) {
     if (!dot) {
       dot = document.createElement('div');
       dot.id = '_sq_dot';
-      dot.style.cssText = 'position:fixed;bottom:8px;left:8px;width:6px;height:6px;border-radius:50%;background:#C47B5A;z-index:9999;opacity:0;transition:opacity .1s';
+      dot.style.cssText = 'position:fixed;bottom:8px;left:8px;width:6px;height:6px;border-radius:50%;background:light-dark(#C47B5A,#bdbdbd);z-index:9999;opacity:0;transition:opacity .1s';
       document.body.appendChild(dot);
     }
     dot.style.opacity = '1';
@@ -3843,7 +3904,7 @@ function showLessonCheckResult() {
   const score = _lessonCheckScore;
   const total = _lessonCheckTotal || _pQ.length || 0;
   const pct = total ? Math.round(score / total * 100) : 0;
-  const col = pct >= 80 ? '#34C759' : pct >= 50 ? '#FF9500' : '#FF3B30';
+  const col = pct >= 80 ? 'light-dark(#34C759,#79a98a)' : pct >= 50 ? 'light-dark(#FF9500,#c4a17a)' : 'light-dark(#FF3B30,#ce827e)';
   const c2 = Math.PI * 2 * 54;
   const off = c2 * (1 - pct / 100);
   const trophySVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
@@ -3855,7 +3916,7 @@ function showLessonCheckResult() {
     + '<div class="r-title">Gratulation!</div>'
     + '<div class="r-sub">Du hast ' + score + ' Punkte erreicht und dafür ' + duration + ' gebraucht.</div>'
     + '<div class="r-ring"><svg width="130" height="130" viewBox="0 0 130 130">'
-    + '<circle cx="65" cy="65" r="54" fill="none" stroke="#E5E5EA" stroke-width="10" transform="rotate(-90 65 65)"/>'
+    + '<circle cx="65" cy="65" r="54" fill="none" stroke="light-dark(#E5E5EA,#555759)" stroke-width="10" transform="rotate(-90 65 65)"/>'
     + '<circle cx="65" cy="65" r="54" fill="none" stroke="' + col + '" stroke-width="10" stroke-linecap="round" stroke-dasharray="' + c2.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '" transform="rotate(-90 65 65)" style="transition:stroke-dashoffset 1s ease"/>'
     + '</svg><div class="r-ring-txt"><div class="r-pct" style="color:' + col + '">' + pct + '%</div><div class="r-frac">' + score + '/' + total + '</div></div></div>'
     + '<div class="r-btns">'
@@ -3918,7 +3979,7 @@ function ensureLessonCheckCard() {
   div.className = 'mode-card';
   div.id = 'mode-lessoncheck';
   div.onclick = startLessonCheck;
-  div.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="mode-name">Lektionsüberprüfung</div><div class="mode-desc" id="lessoncheck-record">Noch kein Rekord<span class="cz">Smíšený test lekce</span></div><div class="mode-bar" style="background:#1A1714"></div>';
+  div.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="mode-name">Lektionsüberprüfung</div><div class="mode-desc" id="lessoncheck-record">Noch kein Rekord<span class="cz">Smíšený test lekce</span></div><div class="mode-bar" style="background:light-dark(#1A1714,#202222)"></div>';
   grid.insertBefore(div, weak || null);
 }
 
@@ -4007,7 +4068,7 @@ function renderGlobalExamCardHtml() {
   const desc = count === 1
     ? 'Prüfung aus 1 Kapitel'
     : 'Prüfung aus ' + count + ' Kapiteln';
-  return '<div class="bento-card wide" id="global-exam-card" style="background:#F5EBE4;border:1px solid rgba(196,123,90,.22);' + (!hasAny ? 'opacity:.45;pointer-events:none;' : '') + '" onclick="startGlobalLessonCheck()">'
+  return '<div class="bento-card wide" id="global-exam-card" style="background:light-dark(#F5EBE4,#333536);border:1px solid rgba(196,123,90,.22);' + (!hasAny ? 'opacity:.45;pointer-events:none;' : '') + '" onclick="startGlobalLessonCheck()">'
     + '<div class="bento-ico-wrap" style="color:var(--ink)">'
     + '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'
     + '</div>'
@@ -4015,7 +4076,7 @@ function renderGlobalExamCardHtml() {
     + '<div class="bento-meta">' + (hasAny ? desc + ' · alle Inhalte gemischt' : 'Noch keine prüfbaren Inhalte') + '</div>'
     + '<div class="bento-meta" style="margin-top:2px;color:var(--ink3)">Zkušební simulace ze všech kapitol</div>'
     + '<div class="bento-meta" id="global-exam-record" style="margin-top:3px;font-weight:800">' + globalExamRecordText() + '</div>'
-    + (hasAny ? '<button class="bento-btn" style="background:var(--ink)" onclick="event.stopPropagation();startGlobalLessonCheck()">Prüfung starten</button>' : '')
+    + (hasAny ? '<button class="bento-btn" style="background:var(--action)" onclick="event.stopPropagation();startGlobalLessonCheck()">Prüfung starten</button>' : '')
     + '</div></div>';
 }
 
@@ -4042,7 +4103,7 @@ window.showLessonCheckResult = function showLessonCheckResultGlobalExamPatched()
   const score = _lessonCheckScore;
   const total = _lessonCheckTotal || _pQ.length || 0;
   const pct = total ? Math.round(score / total * 100) : 0;
-  const col = pct >= 80 ? '#34C759' : pct >= 50 ? '#FF9500' : '#FF3B30';
+  const col = pct >= 80 ? 'light-dark(#34C759,#79a98a)' : pct >= 50 ? 'light-dark(#FF9500,#c4a17a)' : 'light-dark(#FF3B30,#ce827e)';
   const c2 = Math.PI * 2 * 54;
   const off = c2 * (1 - pct / 100);
   const trophySVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>';
@@ -4054,7 +4115,7 @@ window.showLessonCheckResult = function showLessonCheckResultGlobalExamPatched()
     + '<div class="r-title">Gratulation!</div>'
     + '<div class="r-sub">Du hast ' + score + ' Punkte erreicht und dafür ' + duration + ' gebraucht.</div>'
     + '<div class="r-ring"><svg width="130" height="130" viewBox="0 0 130 130">'
-    + '<circle cx="65" cy="65" r="54" fill="none" stroke="#E5E5EA" stroke-width="10" transform="rotate(-90 65 65)"/>'
+    + '<circle cx="65" cy="65" r="54" fill="none" stroke="light-dark(#E5E5EA,#555759)" stroke-width="10" transform="rotate(-90 65 65)"/>'
     + '<circle cx="65" cy="65" r="54" fill="none" stroke="' + col + '" stroke-width="10" stroke-linecap="round" stroke-dasharray="' + c2.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '" transform="rotate(-90 65 65)" style="transition:stroke-dashoffset 1s ease"/>'
     + '</svg><div class="r-ring-txt"><div class="r-pct" style="color:' + col + '">' + pct + '%</div><div class="r-frac">' + score + '/' + total + '</div></div></div>'
     + '<div class="r-btns">'
@@ -4606,7 +4667,7 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
     const card = document.createElement('div');
     card.className = 'mode-card'; card.id = 'mode-sentences';
     card.setAttribute('onclick', "openLessonSelect('sentences')");
-    card.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h6"/></svg></div><div class="mode-name">Sätze</div><div class="mode-desc">Im Kopf übersetzen und aufdecken<span class="cz">Přeložit v duchu a odkrýt překlad</span></div><div class="mode-bar" style="background:#5AC8FA"></div>';
+    card.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h6"/></svg></div><div class="mode-name">Sätze</div><div class="mode-desc">Im Kopf übersetzen und aufdecken<span class="cz">Přeložit v duchu a odkrýt překlad</span></div><div class="mode-bar" style="background:light-dark(#5AC8FA,#8c9fa5)"></div>';
     const order = document.getElementById('mode-order'); grid.insertBefore(card, order || null);
   }
   window.patchLessonModeCards = function() {
@@ -4827,7 +4888,7 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
       card = document.createElement('div');
       card.className = 'mode-card';
       card.id = 'mode-lessoncheck';
-      card.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="mode-name">Lektionsüberprüfung</div><div class="mode-desc" id="lessoncheck-record">Noch kein Rekord<span class="cz">Smíšený test lekce</span></div><div class="mode-bar" style="background:#1A1714"></div>';
+      card.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="mode-name">Lektionsüberprüfung</div><div class="mode-desc" id="lessoncheck-record">Noch kein Rekord<span class="cz">Smíšený test lekce</span></div><div class="mode-bar" style="background:light-dark(#1A1714,#202222)"></div>';
       const weak = byId('mode-weak');
       grid.insertBefore(card, weak || null);
     }
@@ -4903,13 +4964,13 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
     const chapters = arr((_cache || {}).chapters);
     const hasAny = hasAnyGlobalPracticeContent();
     const desc = chapters.length === 1 ? 'Prüfung aus 1 Kapitel' : 'Prüfung aus ' + chapters.length + ' Kapiteln';
-    return '<div class="bento-card wide" id="global-exam-card" style="background:#F5EBE4;border:1px solid rgba(196,123,90,.22);' + (!hasAny ? 'opacity:.45;pointer-events:none;' : '') + '">' +
+    return '<div class="bento-card wide" id="global-exam-card" style="background:light-dark(#F5EBE4,#333536);border:1px solid rgba(196,123,90,.22);' + (!hasAny ? 'opacity:.45;pointer-events:none;' : '') + '">' +
       '<div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>' +
       '<div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div>' +
       '<div class="bento-meta">' + (hasAny ? desc + ' · alle Inhalte gemischt' : 'Noch keine prüfbaren Inhalte') + '</div>' +
       '<div class="bento-meta" style="margin-top:2px;color:var(--ink3)">Zkušební simulace ze všech kapitol</div>' +
       '<div class="bento-meta" id="global-exam-record" style="margin-top:3px;font-weight:800">' + examRecText() + '</div>' +
-      (hasAny ? '<button class="bento-btn" style="background:var(--ink)" type="button">Prüfung starten</button>' : '') + '</div></div>';
+      (hasAny ? '<button class="bento-btn" style="background:var(--action)" type="button">Prüfung starten</button>' : '') + '</div></div>';
   }
   const previousRenderLearnListFinal = window.renderLearnList;
   window.renderLearnList = function renderLearnListFinalStable(){
@@ -5023,13 +5084,13 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
   function globalCardHtml(){
     var chapters = arr((_cache||{}).chapters);
     var desc = chapters.length === 1 ? 'Prüfung aus 1 Kapitel' : 'Prüfung aus ' + chapters.length + ' Kapiteln';
-    return '<div class="bento-card wide" id="global-exam-card" style="background:#F5EBE4;border:1px solid rgba(196,123,90,.22);pointer-events:auto;cursor:pointer">'
+    return '<div class="bento-card wide" id="global-exam-card" style="background:light-dark(#F5EBE4,#333536);border:1px solid rgba(196,123,90,.22);pointer-events:auto;cursor:pointer">'
       + '<div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>'
       + '<div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div>'
       + '<div class="bento-meta">'+desc+' · alle Inhalte gemischt</div>'
       + '<div class="bento-meta" style="margin-top:2px;color:var(--ink3)">Zkušební simulace ze všech kapitol</div>'
       + '<div class="bento-meta" id="global-exam-record" style="margin-top:3px;font-weight:800">'+examText()+'</div>'
-      + '<button class="bento-btn" style="background:var(--ink)" type="button">Prüfung starten</button></div></div>';
+      + '<button class="bento-btn" style="background:var(--action)" type="button">Prüfung starten</button></div></div>';
   }
   function ensureGlobalCard(){
     var container = byId('learn-ch-list');
@@ -5116,8 +5177,8 @@ Ziel:
     if(typeof refreshTimers==='function') refreshTimers(); var container=byId('learn-ch-list'); if(!container)return; var chs=chapters();
     if(!chs.length){ container.className='ch-list'; container.innerHTML='<div class="no-ch"><div class="no-ch-icon">📚</div><div class="no-ch-t">Noch keine Kapitel</div><div class="no-ch-s">Gehe zu „Inhalte verwalten“ um Kapitel anzulegen</div></div>'; return; }
     container.className='bento-grid'; var html='';
-    html+='<div class="bento-card wide" id="global-exam-card" data-action="global-exam" style="background:#F5EBE4;border:1px solid rgba(196,123,90,.22);cursor:pointer;pointer-events:auto"><div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div><div class="bento-meta">Alle Kapitel · alle Inhalte gemischt</div><div class="bento-meta" style="margin-top:2px;color:var(--ink3)">Zkušební simulace ze všech kapitol</div><div class="bento-meta" id="global-exam-record" style="margin-top:3px;font-weight:800">'+escText(globalExamRecordTextStable())+'</div><button class="bento-btn" type="button" data-action="global-exam" style="background:var(--ink)">Prüfung starten</button></div></div>';
-    var bg=(typeof BENTO_BG!=='undefined')?BENTO_BG:['#EBF3FF','#EEFAF2','#FFF6EC','#F5EEFF','#FFF0EE','#E1F5EE','#FAEEDA','#F5EBE4']; var btn=(typeof BENTO_BTN!=='undefined')?BENTO_BTN:['#007AFF','#34C759','#FF9500','#AF52DE','#FF3B30','#0F6E56','#BA7517','#C47B5A'];
+    html+='<div class="bento-card wide" id="global-exam-card" data-action="global-exam" style="background:light-dark(#F5EBE4,#333536);border:1px solid rgba(196,123,90,.22);cursor:pointer;pointer-events:auto"><div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div><div class="bento-meta">Alle Kapitel · alle Inhalte gemischt</div><div class="bento-meta" style="margin-top:2px;color:var(--ink3)">Zkušební simulace ze všech kapitol</div><div class="bento-meta" id="global-exam-record" style="margin-top:3px;font-weight:800">'+escText(globalExamRecordTextStable())+'</div><button class="bento-btn" type="button" data-action="global-exam" style="background:var(--action)">Prüfung starten</button></div></div>';
+    var bg=(typeof BENTO_BG!=='undefined')?BENTO_BG:['light-dark(#EBF3FF,#303538)','light-dark(#EEFAF2,#263b31)','light-dark(#FFF6EC,#333536)','light-dark(#F5EEFF,#303538)','light-dark(#FFF0EE,#442d2d)','light-dark(#E1F5EE,#333536)','light-dark(#FAEEDA,#333536)','light-dark(#F5EBE4,#333536)']; var btn=(typeof BENTO_BTN!=='undefined')?BENTO_BTN:['light-dark(#007AFF,#7f8990)','light-dark(#34C759,#79a98a)','light-dark(#FF9500,#c4a17a)','light-dark(#AF52DE,#a39aaa)','light-dark(#FF3B30,#ce827e)','light-dark(#0F6E56,#819b8c)','light-dark(#BA7517,#aa9782)','light-dark(#C47B5A,#bdbdbd)'];
     chs.forEach(function(ch,i){ var color=btn[i%btn.length],back=bg[i%bg.length],wide=(i%3===2)?' wide':''; html+='<div class="bento-card'+wide+'" data-action="open-learning" data-chapter-id="'+escText(ch.id)+'" style="background:'+back+';cursor:pointer"><div class="bento-ico-wrap" style="color:'+color+'"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div class="bento-info"><div class="bento-name">'+escText(ch.name||'Kapitel')+'</div><div class="bento-meta">'+escText(chapterMeta(ch))+'</div>'+(hasAnyChapterContent(ch)?'<button class="bento-btn" type="button" data-action="open-learning" data-chapter-id="'+escText(ch.id)+'" style="background:'+color+'">Üben</button>':'')+'</div></div>'; });
     container.innerHTML=html;
   }
@@ -5186,7 +5247,7 @@ Ziel:
     div.className = "mode-card";
     div.id = "mode-sentences";
     div.setAttribute("data-action","mode-card");
-    div.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg></div><div class="mode-name">Sätze</div><div class="mode-desc">Im Kopf übersetzen und aufdecken<span class="cz">Přeložit v duchu a odkrýt překlad</span></div><div class="mode-bar" style="background:#007AFF"></div>';
+    div.innerHTML = '<div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg></div><div class="mode-name">Sätze</div><div class="mode-desc">Im Kopf übersetzen und aufdecken<span class="cz">Přeložit v duchu a odkrýt překlad</span></div><div class="mode-bar" style="background:light-dark(#007AFF,#7f8990)"></div>';
     if(sentOrder && sentOrder.parentNode) sentOrder.parentNode.insertBefore(div, sentOrder);
     else grid.appendChild(div);
   }
@@ -5910,8 +5971,8 @@ Renderer und vorhandene Views bleiben erhalten.
     if(typeof oldRenderLearnList==='function') oldRenderLearnList.apply(this,arguments);
     var list=byId('learn-ch-list'); if(!list) return;
     if(!byId('global-exam-card')){
-      var card=document.createElement('div'); card.className='bento-card wide'; card.id='global-exam-card'; card.style.cssText='background:#F5EBE4;border:1px solid rgba(196,123,90,.22);cursor:pointer;pointer-events:auto';
-      card.innerHTML='<div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div><div class="bento-meta">Alle Kapitel · alle Inhalte gemischt</div><button class="bento-btn" type="button" style="background:var(--ink)">Prüfung starten</button></div>';
+      var card=document.createElement('div'); card.className='bento-card wide'; card.id='global-exam-card'; card.style.cssText='background:light-dark(#F5EBE4,#333536);border:1px solid rgba(196,123,90,.22);cursor:pointer;pointer-events:auto';
+      card.innerHTML='<div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div><div class="bento-meta">Alle Kapitel · alle Inhalte gemischt</div><button class="bento-btn" type="button" style="background:var(--action)">Prüfung starten</button></div>';
       list.insertBefore(card,list.firstChild);
     }
     enforceHandlers();
@@ -6286,7 +6347,7 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
     var ch=currentChapter(), el=byId('sent-list'); if(!el||!ch)return;
     var cat=sentenceAdminCategory, sel=selectedLesson(cat,ch), list=currentItems(ch,cat);
     if(!list.length){ el.innerHTML='<div class="empty-msg">Keine Inhalte in „'+html(labelFor(cat))+'“ / Lektion „'+html(sel)+'“</div>'; return; }
-    el.innerHTML='<div class="list-card">'+list.map(function(item){ return '<div class="li-row"><div class="li-body"><div class="li-tag blue">'+html(labelFor(cat))+'</div><div class="li-title">'+itemTitle(item,cat)+'</div><div class="li-ex">Lektion: '+html(lessonNameOf(item))+'</div></div><button class="ch-btn" style="background:var(--orange)" onclick="editSentenceAdminItem(\''+js(cat)+'\',\''+js(item.id)+'\')">Bearbeiten</button><button class="btn-del" onclick="deleteSentenceAdminItem(\''+js(cat)+'\',\''+js(item.id)+'\')">✕</button></div>'; }).join('')+'</div>';
+    el.innerHTML='<div class="list-card">'+list.map(function(item){ return '<div class="li-row"><div class="li-body"><div class="li-tag blue">'+html(labelFor(cat))+'</div><div class="li-title">'+itemTitle(item,cat)+'</div><div class="li-ex">Lektion: '+html(lessonNameOf(item))+'</div></div><button class="ch-btn" style="background:var(--orange-action)" onclick="editSentenceAdminItem(\''+js(cat)+'\',\''+js(item.id)+'\')">Bearbeiten</button><button class="btn-del" onclick="deleteSentenceAdminItem(\''+js(cat)+'\',\''+js(item.id)+'\')">✕</button></div>'; }).join('')+'</div>';
   }
   function removeDuplicateSentenceLessonBars(){
     // FIX: Alte untere Lektionsauswahlen aus dem Content-Bereich entfernen; die obere Auswahl bleibt erhalten.
@@ -6493,7 +6554,7 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
     if(row.querySelector('.admin-edit-restored')) return;
     var btn=document.createElement('button');
     btn.className='ch-btn admin-edit-restored';
-    btn.style.background='var(--orange)';
+    btn.style.background='var(--orange-action)';
     btn.textContent='Bearbeiten';
     btn.onclick=function(){ if(typeof window[fnName]==='function') window[fnName](id); };
     delBtn.parentNode.insertBefore(btn, delBtn);
@@ -6534,7 +6595,7 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
 <script src="account-ui.js?v=20261105-chapter-additions1"></script>
 <script src="chapter-groups.js?v=20261030-2"></script>
 <script src="study-evidence.js?v=20261105-1"></script>
-<link rel="stylesheet" href="teacher-ui.css?v=20261106-foxly2">
+<link rel="stylesheet" href="teacher-ui.css?v=20261106-theme1">
 <script src="teacher-ui.js?v=20261106-foxly5"></script>
 </body>
 </html>

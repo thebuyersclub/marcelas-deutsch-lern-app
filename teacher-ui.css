@@ -1,8 +1,7 @@
 html:has(#teacher-view.active), body:has(#teacher-view.active) {
   overflow: hidden;
   overscroll-behavior: none;
-  background: #14191c;
-  color-scheme: dark;
+  background: light-dark(#eeeff1,#14191c);
 }
 #teacher-view {
   position: fixed;
@@ -11,10 +10,9 @@ html:has(#teacher-view.active), body:has(#teacher-view.active) {
   height: var(--foxly-height, 100dvh);
   min-height: 0;
   overflow: hidden;
-  background: linear-gradient(#3c4143, #14191c);
-  color: #f7f7f7;
+  background: linear-gradient(light-dark(#fafafa,#3c4143), light-dark(#eeeff1,#14191c));
+  color: light-dark(#202222,#f7f7f7);
   font: 16px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  color-scheme: dark;
 }
 body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { display: none; }
 #teacher-view .teacher-wrap {
@@ -29,7 +27,7 @@ body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { d
 .foxly-header {
   flex: none;
   padding: max(12px, env(safe-area-inset-top)) 16px 10px;
-  background: #353638;
+  background: light-dark(#f5f5f6,#353638);
 }
 .foxly-meta {
   display: flex;
@@ -71,8 +69,8 @@ body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { d
   overflow-wrap: anywhere;
   line-height: 1.42;
 }
-.foxly-left { align-self: flex-start; background: #202222; border-bottom-left-radius: 6px; }
-.foxly-right { align-self: flex-end; background: #484849; border-bottom-right-radius: 6px; }
+.foxly-left { align-self: flex-start; background: light-dark(#ffffff,#202222); border-bottom-left-radius: 6px; }
+.foxly-right { align-self: flex-end; background: light-dark(#dcdfe2,#484849); border-bottom-right-radius: 6px; }
 .foxly-bubble::after {
   content: '';
   position: absolute;
@@ -84,9 +82,9 @@ body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { d
 }
 .foxly-left::after { left: -6px; clip-path: polygon(65% 0, 100% 0, 100% 70%, 64% 93%, 0 100%, 36% 70%); }
 .foxly-right::after { right: -6px; clip-path: polygon(35% 0, 0 0, 0 70%, 36% 93%, 100% 100%, 64% 70%); }
-.foxly-time { display: block; text-align: right; color: #cbcbcb; font-size: 11px; }
+.foxly-time { display: block; text-align: right; color: light-dark(#55585c,#cbcbcb); font-size: 11px; }
 .foxly-prompt { margin-top: 7px; font-weight: 650; }
-.foxly-translation { margin-top: 6px; color: #dedede; }
+.foxly-translation { margin-top: 6px; color: light-dark(#45494e,#dedede); }
 .foxly-translation summary { width: fit-content; cursor: pointer; font-size: 13px; font-weight: 750; }
 .foxly-translation p { margin-block: 4px; font-size: .94em; }
 #foxly-composer {
@@ -96,7 +94,7 @@ body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { d
   align-items: flex-end;
   gap: 7px;
   max-height: 52%;
-  background: #242526;
+  background: light-dark(#f4f4f5,#242526);
   padding: 8px 12px max(8px, env(safe-area-inset-bottom));
 }
 .foxly-compose-main { flex: 1; min-width: 0; max-height: 100%; overflow-y: auto; }
@@ -107,30 +105,30 @@ body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { d
   min-height: 44px;
   padding: 9px 13px;
   color: inherit;
-  background: #393a3b;
-  border: 1px solid #656566;
+  background: light-dark(#fff,#393a3b);
+  border: 1px solid light-dark(#a9acb0,#656566);
   border-radius: 22px;
   font: inherit;
 }
 #teacher-view .foxly-text-input { font-size: 16px; }
-#teacher-view .foxly-text-input::placeholder { color: #d3d3d3; }
+#teacher-view .foxly-text-input::placeholder { color: light-dark(#53575c,#d3d3d3); }
 .teacher-button {
   min-width: 44px;
   min-height: 44px;
   max-width: 100%;
   padding: 6px 11px;
-  border: 1px solid #68696a;
+  border: 1px solid light-dark(#a1a4a8,#68696a);
   border-radius: 22px;
-  background: #525354;
-  color: #fff;
+  background: light-dark(#dedfe1,#525354);
+  color: light-dark(#202222,#fff);
   font: inherit;
   overflow-wrap: anywhere;
   cursor: pointer;
 }
-.teacher-button.secondary { background: #393a3b; }
+.teacher-button.secondary { background: light-dark(#fff,#393a3b); }
 .teacher-button:disabled { opacity: .6; cursor: wait; }
-.teacher-button:focus-visible, .foxly-translation summary:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-#teacher-view .foxly-text-input:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+.teacher-button:focus-visible, .foxly-translation summary:focus-visible { outline: 2px solid light-dark(#202222,#fff); outline-offset: 2px; }
+#teacher-view .foxly-text-input:focus-visible { outline: 2px solid light-dark(#202222,#fff); outline-offset: -2px; }
 .foxly-bar button, .foxly-actions > button, .foxly-input-row button[type="submit"] { font-size: 24px; line-height: 1; }
 .foxly-help {
   position: absolute;
@@ -142,15 +140,15 @@ body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { d
   max-height: min(48dvh, 320px);
   overflow: auto;
   padding: 7px;
-  background: #303132;
-  border: 1px solid #666;
+  background: light-dark(#f7f7f8,#303132);
+  border: 1px solid light-dark(#a9acb0,#666);
   border-radius: 17px;
 }
 .foxly-help button { display: block; width: 100%; text-align: left; margin-block: 3px; }
 .foxly-pool, .foxly-tray { display: flex; flex-wrap: wrap; gap: 5px; }
 .foxly-pool { max-height: 18dvh; overflow: auto; margin-bottom: 6px; }
 .foxly-tray { max-height: 15dvh; overflow: auto; padding: 3px; }
-.foxly-pool button[aria-pressed="true"] { border-color: #eee; background: #5c5d5e; }
+.foxly-pool button[aria-pressed="true"] { border-color: light-dark(#595c61,#eee); background: light-dark(#d7dade,#5c5d5e); }
 .foxly-tile { display: inline-flex; max-width: 100%; min-width: 0; }
 .foxly-tile button { min-width: 0; }
-#teacher-status:not(:empty), #teacher-retry:not(:empty) { flex: none; padding: 4px 13px; background: #242526; }
+#teacher-status:not(:empty), #teacher-retry:not(:empty) { flex: none; padding: 4px 13px; background: light-dark(#f4f4f5,#242526); }

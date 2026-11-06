@@ -127,8 +127,10 @@
   form.onsubmit=event=>{
    event.preventDefault();
    if(translating?translationBusy:busy)return;
-   if(answer.value.trim())onSend(answer.value.trim());
-   else answer.focus();
+   const text=answer.value.trim();
+   if(!text){answer.focus();return;}
+   answer.blur();
+   onSend(text);
   };
   parent.append(form);
  }

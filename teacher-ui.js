@@ -93,8 +93,17 @@
    const source=[needsTranslation?item.de:'',extra].filter(Boolean).join('\n');
    if(item.translated)translated.textContent=item.translated;
    let pending=false;
-   if(source&&!item.translated)details.ontoggle=async()=>{
-    if(!details.open||pending||item.translated)return;
+   function revealTranslation(){
+    if(!details.open||!details.isConnected)return;
+    const box=content(),visible=box.getBoundingClientRect(),opened=details.getBoundingClientRect();
+    const gap=10;
+    if(opened.height>visible.height-2*gap)box.scrollTop+=opened.top-visible.top-gap;
+    else if(opened.bottom>visible.bottom-gap)box.scrollTop+=opened.bottom-visible.bottom+gap;
+   }
+   details.ontoggle=async()=>{
+    if(!details.open)return;
+    revealTranslation();
+    if(!source||pending||item.translated)return;
     const account=owner;
     pending=true;translated.textContent=item.cz||'Překládám…';
     try{
@@ -103,7 +112,7 @@
      item.translated=[needsTranslation?'':item.cz,result].filter(Boolean).join('\n');
      translated.textContent=item.translated;saveHistory();
     }catch{translated.textContent=[item.cz,'Překlad se nepodařil. Zavři ho a otevři znovu.'].filter(Boolean).join('\n');}
-    finally{pending=false;}
+    finally{pending=false;revealTranslation();}
    };
    outer.append(details);
   }

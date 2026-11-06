@@ -1,6 +1,8 @@
 /* Persönlicher Unterricht: Antworten werden ausschließlich am Server bewertet. */
 (function(){'use strict';
  let view=null,owner=null,busy=false,generation=0,controller=null,audio=null,audioURL=null,speechGeneration=0,speechEnd=null,tick=null,lastTick=0;
+ const retention=48*3600000;
+ let history=[],translations=[],translating=false,translationBusy=false,translationDraft='',waiting=false,draft='',selected=[],menuOpen=false,chatTimer=null;
  const user=()=>window.marcelaAuth.user(),active=()=>document.getElementById('teacher-view')?.classList.contains('active');
  const node=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;};
  function button(label,action,secondary=false){const el=node('button',label,secondary?'teacher-button secondary':'teacher-button');el.type='button';el.disabled=busy;el.onclick=action;return el;}
@@ -13,7 +15,7 @@
  function setBusy(value){busy=value;document.querySelectorAll('#teacher-view button,#teacher-view textarea').forEach(el=>el.disabled=value);content()?.setAttribute('aria-busy',String(value));}
  async function request(operation,event){
   if(user()?.uid!==owner)throw Error('Bitte erneut anmelden.');
-  const seq=generation,body={operation,requestId:crypto.randomUUID()};
+  const seq=generation,body={operation,chat:true,requestId:crypto.randomUUID()};
   if(['event','review','restart','next'].includes(operation))body.revision=view.revision;
   if(event)body.event={...event,stepId:view.stepId};
   controller=new AbortController();const timeout=setTimeout(()=>controller?.abort(),55000);
@@ -23,9 +25,16 @@
    if(!response.ok)throw Error(result.error?.message||'Unterricht ist gerade nicht erreichbar.');return result;
   }finally{clearTimeout(timeout);controller=null;}
  }
- async function send(operation,event){
+ async function send(operation,event,outgoing){
   if(busy)return;stopSpeech();setBusy(true);message('Einen Moment …');
-  try{view=await request(operation,event);render();}
+  try{
+   const result=await request(operation,event);
+   if(outgoing)remember({id:result.sessionId+':answer:'+result.revision,side:'right',de:outgoing});
+   if(result.feedback)remember({id:result.sessionId+':feedback:'+result.revision,side:'left',...result.feedback});
+   waiting=!!(result.feedback&&(result.feedback.wait??event?.type==='continue'));
+   if(outgoing||result.stepId!==view?.stepId){draft='';selected=[];}
+   view=result;menuOpen=false;render();
+  }
   catch(error){if(active()){message(error.name==='AbortError'?'Die Verbindung hat zu lange gedauert. Bitte den gespeicherten Stand neu laden.':error.message);const retry=button('Gespeicherten Stand laden',()=>load());retry.disabled=false;document.getElementById('teacher-retry').replaceChildren(retry);}}
   finally{setBusy(false);syncClock();}
  }
@@ -33,8 +42,8 @@
   if(busy)return;setBusy(true);message('Unterricht wird geladen …');
   try{view=await request('start');render();}catch(error){message(error.message);const retry=button('Erneut versuchen',load);retry.disabled=false;document.getElementById('teacher-retry').replaceChildren(retry);}finally{setBusy(false);syncClock();}
  }
- async function speak(slow=false){
-  stopSpeech();const seq=speechGeneration,text=view?.teacher?.de;if(!text)return;
+ async function speak(slow=false,text=view?.teacher?.de){
+  stopSpeech();const seq=speechGeneration;if(!text)return;
   const ownerAtStart=owner;
   try{for await(const blob of window.marcelaTranslator.speechChunks(text)){
    if(seq!==speechGeneration||!active()||user()?.uid!==ownerAtStart)return;
@@ -43,148 +52,254 @@
    speechEnd=null;if(audioURL){URL.revokeObjectURL(audioURL);audioURL=null;}if(seq!==speechGeneration)break;
   }}catch(error){if(seq===speechGeneration&&active())message(error.message);}
  }
- function dialogue(parent, text){
-  const scene=node('div',undefined,'teacher-dialogue');
-  if(text?.de)scene.append(node('p',text.de,'teacher-bubble teacher-voice teacher-german'));
-  if(text?.cz){
-   const thought=node('p',text.cz,'teacher-thought teacher-czech');
-   thought.lang='cs';
-   scene.append(thought);
-  }
-  parent.append(scene);
-  return scene;
+ const historyKey=()=> 'marcela.foxly.history.'+owner;
+ function saveHistory(){
+  try{window.localStorage?.setItem(historyKey(),JSON.stringify(history));}catch{}
  }
- function exerciseInput(parent, exercise){
-  if(exercise.prompt){
-   const prompt=node('p',exercise.prompt,'teacher-exercise-prompt');
-   if(['words','vocabulary','writing'].includes(exercise.mode))prompt.lang='cs';
-   parent.append(prompt);
-  }
-  if(['question','writing'].includes(exercise.mode)){
-   answerForm(parent, answer=>send('event',{type:'practice',answer}));
-   return;
-  }
-  if(!['words','sentences'].includes(exercise.mode)){
-   for(const item of exercise.items)parent.append(button(item.text,()=>send('event',{type:'practice',itemIds:[item.id]}),true));
-   return;
-  }
-  const selected=[];
-  const tray=node('ol',undefined,'teacher-order-tray');
-  tray.setAttribute('aria-label','Deine Reihenfolge');
-  tray.setAttribute('aria-live','polite');
-  const pool=node('div',undefined,'teacher-token-pool');
-  const undo=button('↶ Letztes entfernen',()=>{
-   selected.pop();
-   updateOrder();
-  },true);
-  const check=button('Reihenfolge prüfen →',()=>{
-   if(selected.length!==exercise.items.length){
-    message('Tippe zuerst alle Bausteine in deiner Reihenfolge an.');
-    return;
-   }
-   send('event',{type:'practice',itemIds:selected.map(item=>item.id)});
-  });
-  const tokens=exercise.items.map(item=>button(item.text,()=>{
-   if(selected.includes(item))return;
-   selected.push(item);
-   updateOrder();
-  },true));
-  function updateOrder(){
-   tray.replaceChildren(...selected.map(item=>node('li',item.text)));
-   tokens.forEach((token,index)=>token.setAttribute('aria-pressed',String(selected.includes(exercise.items[index]))));
-   message('');
-  }
-  pool.append(...tokens);
-  parent.append(tray,pool,undo,check);
-  if(exercise.mode==='sentences')parent.classList.add('teacher-sentence-order');
+ function pruneHistory(){
+  const recent=history.filter(item=>item.at>Date.now()-retention);
+  if(recent.length===history.length)return false;
+  history=recent;saveHistory();return true;
  }
- function answerForm(parent, submitAnswer){
-  const form=node('form'), label=node('label','Deine Antwort auf Deutsch'), answer=node('textarea');
-  answer.rows=3;
-  answer.maxLength=2000;
-  answer.autocomplete='off';
-  answer.id='teacher-answer';
-  label.htmlFor=answer.id;
-  const submit=button('Antwort prüfen →',()=>{});
-  submit.type='submit';
-  form.append(label,answer,submit);
+ function readHistory(){
+  try{
+   const stored=JSON.parse(window.localStorage?.getItem(historyKey())||'[]');
+   history=Array.isArray(stored)?stored.filter(item=>typeof item?.de==='string'&&Number.isFinite(item.at)):[];
+  }catch{history=[];}
+  pruneHistory();
+ }
+ function remember(item){
+  pruneHistory();
+  if(!item.de||history.some(entry=>entry.id===item.id))return;
+  history.push({...item,at:Date.now()});saveHistory();
+ }
+ const localTime=at=>new Date(at).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
+ const goodnight=text=>/^(gute nacht|dobrou noc)[.!?]*$/iu.test(text.trim());
+ function bubble(item){
+  const outer=node('article',undefined,'foxly-bubble foxly-'+item.side);
+  outer.append(node('p',item.de));
+  if(item.prompt){
+   const prompt=node('p',item.prompt,'foxly-prompt');
+   if(item.promptLang)prompt.lang=item.promptLang;
+   outer.append(prompt);
+  }
+  if(item.correction)outer.append(node('p',item.correction,'foxly-prompt'));
+  if(item.side==='left'&&!translating){
+   const details=node('details',undefined,'foxly-translation');
+   const label=node('summary','Překlad');label.lang='cs';
+   const translated=node('p',item.cz||'');translated.lang='cs';
+   details.append(label,translated);
+   const needsTranslation=item.needsTranslation||!item.cz;
+   const extra=[item.promptLang!=='cs'?item.prompt:'',item.correction].filter(Boolean).join('\n');
+   const source=[needsTranslation?item.de:'',extra].filter(Boolean).join('\n');
+   if(item.translated)translated.textContent=item.translated;
+   let pending=false;
+   if(source&&!item.translated)details.ontoggle=async()=>{
+    if(!details.open||pending||item.translated)return;
+    const account=owner;
+    pending=true;translated.textContent=item.cz||'Překládám…';
+    try{
+     const result=await window.marcelaTranslator.translate(source,'de-cz');
+     if(account!==owner||user()?.uid!==account)return;
+     item.translated=[needsTranslation?'':item.cz,result].filter(Boolean).join('\n');
+     translated.textContent=item.translated;saveHistory();
+    }catch{translated.textContent=[item.cz,'Překlad se nepodařil. Zavři ho a otevři znovu.'].filter(Boolean).join('\n');}
+    finally{pending=false;}
+   };
+   outer.append(details);
+  }
+  outer.append(node('small',localTime(item.at),'foxly-time'));
+  return outer;
+ }
+ function sendButton(form){
+  const submit=button('↑',()=>{});submit.type='submit';
+  submit.setAttribute('aria-label','Odeslat');
+  form.append(submit);
+ }
+ function textComposer(parent,{value,onInput,onSend}){
+  const form=node('form',undefined,'foxly-input-row'),answer=node('textarea');
+  answer.rows=1;if(!translating)answer.maxLength=2000;answer.autocomplete='off';
+  answer.placeholder=translating?'Napiš německy nebo česky…':'Napiš zprávu…';
+  answer.setAttribute('aria-label',answer.placeholder);answer.value=value;
+  answer.disabled=translating?translationBusy:busy;
+  answer.oninput=()=>onInput(answer.value);
+  answer.onkeydown=event=>{
+   if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();form.requestSubmit();}
+  };
+  form.append(answer);sendButton(form);
   form.onsubmit=event=>{
    event.preventDefault();
-   if(answer.value.trim())submitAnswer(answer.value.trim());
+   if(answer.value.trim())onSend(answer.value.trim());
    else answer.focus();
   };
   parent.append(form);
  }
- function controls(parent){
-  const help=node('div',undefined,'teacher-help');
-  const readAloud=button('Přečíst nahlas',()=>speak(),true);
-  readAloud.lang='cs';
-  help.append(readAloud);
-  for(const phrase of view.helpPhrases||[]){
-   const b=button(phrase.cz||phrase.de,async()=>{
-    if(['repeat','slower'].includes(phrase.effect)){
-     await speak(phrase.effect==='slower');
-     return;
+ function tiles(parent,items,ordered,submit){
+  const form=node('form',undefined,'foxly-tiles');
+  const tray=node('div',undefined,'foxly-tray'),pool=node('div',undefined,'foxly-pool');
+  const row=node('div',undefined,'foxly-input-row');
+  row.append(tray);sendButton(row);
+  row.children[row.children.length-1].type='submit';
+  form.append(pool,row);
+  form.onsubmit=event=>{
+   event.preventDefault();
+   if(selected.length!==(ordered?items.length:1)){message(ordered?'Seřaď všechny části.':'Vyber jednu možnost.');return;}
+   submit(selected.map(id=>items.find(item=>item.id===id)));
+  };
+  function update(){
+   const chosen=selected.map(id=>items.find(item=>item.id===id)).filter(Boolean);
+   tray.replaceChildren(...chosen.map((item,index)=>{
+    const group=node('span',undefined,'foxly-tile');
+    if(ordered&&index>0){
+     const move=button('←',()=>{
+      [selected[index-1],selected[index]]=[selected[index],selected[index-1]];update();
+     },true);move.setAttribute('aria-label','Posunout '+item.text);group.append(move);
     }
-    await send('event',{type:'help',action:phrase.effect});
-   },true);
-   if(phrase.cz)b.lang='cs';
-   help.append(b);
+    const remove=button(item.text+' ×',()=>{selected.splice(index,1);update();},true);
+    group.append(remove);return group;
+   }));
+   pool.replaceChildren(...items.map(item=>{
+    const b=button(item.text,()=>{
+     if(ordered){if(!selected.includes(item.id))selected.push(item.id);}
+     else selected=[item.id];
+     update();
+    },true);
+    b.setAttribute('aria-pressed',String(selected.includes(item.id)));return b;
+   }));
+   message('');
   }
-  const navigation=node('div',undefined,'teacher-lesson-navigation');
-  navigation.append(button('← Pause',()=>leave('home'),true));
-  parent.append(navigation,help);
+  update();parent.append(form);
  }
- const statusLabels={retained_later:'Später wieder selbstständig gekonnt',independent_now:'Heute selbstständig gekonnt',practised_with_help_or_recognition:'Mit Hilfe oder Auswahl geübt',observed_at_entry:'Beim Einstieg gelungen',needs_practice:'Weiter üben',not_observed:'Noch nicht geprüft'};
+ async function translate(text){
+  if(translationBusy)return;
+  const account=owner,turn=generation;translationBusy=true;render();
+  try{
+   const result=await window.marcelaTranslator.translate(text,'auto');
+   if(account!==owner||turn!==generation||user()?.uid!==account)return;
+   translations.push({de:text,side:'right',at:Date.now()},{de:result,side:'left',at:Date.now()});
+   translationDraft='';if(translating)render();
+  }catch(error){if(translating&&account===owner&&turn===generation)message(error.message);}
+  finally{
+   if(account===owner&&turn===generation){
+    translationBusy=false;
+    if(translating){
+     const status=document.getElementById('teacher-status').textContent;
+     render();if(status)message(status);
+    }
+   }
+  }
+ }
+ function helpMenu(parent){
+  const controls=node('div',undefined,'foxly-actions');
+  const plus=button('+',()=>{
+   menuOpen=!menuOpen;panel.hidden=!menuOpen;plus.setAttribute('aria-expanded',String(menuOpen));
+  },true);
+  plus.setAttribute('aria-label','Nápověda');plus.setAttribute('aria-expanded',String(menuOpen));
+  const panel=node('div',undefined,'foxly-help');panel.hidden=!menuOpen;
+  panel.append(button('Překlad',()=>{menuOpen=false;translating=true;stopSpeech();render();},true));
+  if(view.status==='active'){
+   panel.append(button('Přečíst nahlas',()=>speak(),true));
+   for(const phrase of view.helpPhrases||[]){
+    panel.append(button(phrase.cz||phrase.de,()=>['repeat','slower'].includes(phrase.effect)
+     ?speak(phrase.effect==='slower'):send('event',{type:'help',action:phrase.effect}),true));
+   }
+   panel.append(button('Dobrou noc',()=>send('event',{type:'goodnight'},'Dobrou noc'),true));
+  }
+  controls.append(plus,panel);parent.append(controls);
+ }
+ function refreshHeader(){
+  document.getElementById('foxly-clock').textContent=localTime(Date.now());
+  document.getElementById('foxly-score').textContent=translating?'':view?.score==null?'— %':view.score+' %';
+  document.getElementById('foxly-title').textContent=translating?'Übersetzer / Překlad':'Foxly – Spaß beim Lernen';
+ }
  function render(){
-  const box=content();box.replaceChildren();document.getElementById('teacher-retry').replaceChildren();message('');
-  if(!view||view.empty){box.append(node('p','Für dieses Konto ist noch kein Unterricht gespeichert.'));return;}
-  box.append(node('div',view.title?.de||'Dein Unterricht','teacher-unit'));if(view.title?.cz){const sub=node('p',view.title.cz,'teacher-czech');sub.lang='cs';box.append(sub);}
-  if(view.feedback){
-   const scene=dialogue(box,view.feedback);
-   const reply=node('section',undefined,'teacher-bubble teacher-reply');
-   if(view.feedback.correction)reply.append(node('p',view.feedback.correction,'teacher-example'));
-   reply.append(button('Weiter',()=>{view.feedback=null;render();}));
-   scene.append(reply);
-   return;
+  const box=content(),composer=document.getElementById('foxly-composer');
+  box.replaceChildren();composer.replaceChildren();document.getElementById('teacher-retry').replaceChildren();message('');
+  refreshHeader();
+  if(translating){
+   box.append(...translations.map(bubble));
+   textComposer(composer,{value:translationDraft,onInput:value=>{translationDraft=value;},onSend:translate});
+   if(translationBusy)message('Překládám…');
+  }else if(view&&!view.empty){
+   if(!waiting&&!view.endedEarly&&view.status!=='paused'){
+    const exercise=view.exercise;
+    remember({id:view.sessionId+':task:'+view.stepId,side:'left',...view.teacher,
+     needsTranslation:!view.stepId.startsWith('linked-practice-')||exercise?.mode==='question',
+     prompt:exercise?.prompt||'',promptLang:['words','vocabulary','writing'].includes(exercise?.mode)?'cs':''});
+   }
+   box.append(...history.map(bubble));
+   const actions=node('div',undefined,'foxly-compose-main');composer.append(actions);
+   if(waiting){
+    actions.append(button(view.feedback?.wait?'Ano, pokračovat':'Weiter',()=>{waiting=false;render();}));
+    if(view.feedback?.wait&&view.status==='active')actions.append(button('Teď ne',()=>leave('home'),true));
+   }else if(view.status==='paused'){
+    actions.append(button('Fortsetzen',()=>send('event',{type:'resume'})));
+   }else if(view.status==='complete'){
+    if(view.plan?.action!=='none')actions.append(button('Nächster Unterricht',()=>send('next')));
+    if(view.reviewDueAt&&Date.now()>=Date.parse(view.reviewDueAt))
+     actions.append(button('Wiederholung beginnen',()=>send('review'),true));
+    actions.append(button('Diese Einheit noch einmal',()=>send('restart'),true));
+   }else if(view.kind==='choice'||view.exercise?.items?.length){
+    const ordered=['words','sentences'].includes(view.exercise?.mode);
+    const items=view.kind==='choice'?(view.options||[]).map(option=>({id:option.id,text:option.text||option.de||option.label||option.id})):view.exercise.items;
+    tiles(actions,items,ordered,chosen=>{
+     const event=view.kind==='choice'?{type:'choose',optionId:chosen[0].id}:{type:'practice',itemIds:chosen.map(item=>item.id)};
+     send('event',event,chosen.map(item=>item.text).join(view.exercise?.mode==='sentences'?'\n':' '));
+    });
+   }else{
+    if(view.kind==='information')actions.append(button('Weiter',()=>send('event',{type:'continue'}),true));
+    textComposer(actions,{value:draft,onInput:value=>{draft=value;},onSend:answer=>{
+     if(goodnight(answer)){send('event',{type:'goodnight'},answer);return;}
+     if(view.kind==='information'){message('Pokračuj tlačítkem Weiter.');return;}
+     send('event',{type:view.kind==='exercise'?'practice':'answer',answer},answer);
+    }});
+   }
+   helpMenu(composer);
   }
-  if(view.status==='paused'){
-   box.append(node('p','Dein Unterricht ist gespeichert. Wir machen an derselben Stelle weiter.'));
-   box.append(button('Fortsetzen',()=>send('event',{type:'resume'})));return;
-  }
-  if(view.status==='complete'){
-   dialogue(box,view.teacher);const list=node('ul');for(const goal of view.summary||[])list.append(node('li',(goal.label||goal.goalId)+': '+(statusLabels[goal.status]||'Noch nicht geprüft')));box.append(list);
-   if(view.plan?.action==='none')box.append(node('p','Für heute ist keine weitere vorbereitete Einheit fällig. Unter Studieren kannst du weiterüben.'));
-   else box.append(button('Nächster Unterricht',()=>send('next')));
-   if(view.reviewDueAt){box.append(node('p','Spätere Wiederholung ab '+new Date(view.reviewDueAt).toLocaleString('de-AT')+'.','teacher-czech'));if(Date.now()>=Date.parse(view.reviewDueAt))box.append(button('Wiederholung beginnen',()=>send('review'),true));}
-   box.append(button('Diese Einheit noch einmal',()=>send('restart'),true));return;
-  }
-  const scene=dialogue(box,view.teacher);
-  const task=node('section',undefined,'teacher-bubble teacher-reply');
-  if(view.kind==='information')task.append(button('Weiter',()=>send('event',{type:'continue'})));
-  if(view.kind==='choice'){
-   for(const option of view.options||[])task.append(button(option.text||option.de||option.label||option.id,()=>send('event',{type:'choose',optionId:option.id}),true));
-  }
-  if(view.kind==='free_response')answerForm(task,answer=>send('event',{type:'answer',answer}));
-  if(view.kind==='exercise')exerciseInput(task,view.exercise);
-  scene.append(task);
-  controls(box);
+  box.scrollTop=box.scrollHeight;
  }
  async function leave(target){
+  if(translating){translating=false;render();return;}
   if(busy)return;stopSpeech();stopClock();
   if(view?.status==='active'&&user()?.uid===owner){setBusy(true);try{view=await request('event',{type:'pause'});}catch(_){/* Existing saved position remains resumable. */}finally{setBusy(false);}}
+  history=[];translations=[];translationDraft='';translationBusy=false;
   generation++;controller?.abort();if(target==='study')window.goLearn();else window.showView('splash');
  }
  async function open(){
   if(busy)return;const current=await window.marcelaAuth.ensureUser();if(!current?.verified)return;
-  owner=current.uid;view=null;generation++;stopSpeech();window.stopTimer?.();window.showView('teacher-view');content().replaceChildren();await load();
+  owner=current.uid;view=null;waiting=false;draft='';selected=[];menuOpen=false;
+  translating=false;translationBusy=false;translations=[];translationDraft='';readHistory();generation++;stopSpeech();window.stopTimer?.();window.showView('teacher-view');render();await load();
  }
  function study(){if(active())return leave('study');window.stopTimer?.();window.goLearn();}
  function init(){
 
-  const page=node('div',undefined,'view');page.id='teacher-view';const wrap=node('div',undefined,'teacher-wrap'),nav=node('nav',undefined,'teacher-nav');nav.append(button('Startseite',()=>leave('home'),true),button('Studieren',()=>leave('study'),true));const title=node('h1','Deine Deutschlehrerin'),box=node('main');box.id='teacher-content';const status=node('p');status.id='teacher-status';status.setAttribute('role','status');const retry=node('div');retry.id='teacher-retry';wrap.append(nav,title,box,status,retry);page.append(wrap);document.body.append(page);
-  new MutationObserver(()=>{if(!active()){stopSpeech();stopClock();}}).observe(page,{attributes:true,attributeFilter:['class']});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){stopSpeech();stopClock();}else syncClock();});
+  const page=node('div',undefined,'view');page.id='teacher-view';
+  const wrap=node('div',undefined,'teacher-wrap'),header=node('header',undefined,'foxly-header');
+  const meta=node('div',undefined,'foxly-meta'),clockLabel=node('span'),score=node('span');
+  clockLabel.id='foxly-clock';score.id='foxly-score';score.setAttribute('aria-label','Trefferquote');meta.append(clockLabel,score);
+  const bar=node('div',undefined,'foxly-bar'),back=button('‹',()=>leave('home'),true);
+  back.setAttribute('aria-label','Zurück');
+  const title=node('h1');title.id='foxly-title';bar.append(back,title);header.append(meta,bar);
+  const box=node('main');box.id='teacher-content';box.setAttribute('role','log');box.setAttribute('aria-live','polite');
+  const composer=node('div');composer.id='foxly-composer';
+  const status=node('p');status.id='teacher-status';status.setAttribute('role','status');
+  const retry=node('div');retry.id='teacher-retry';
+  wrap.append(header,box,status,retry,composer);page.append(wrap);document.body.append(page);
+  new MutationObserver(()=>{
+   if(active()){
+    if(!chatTimer)chatTimer=setInterval(()=>{refreshHeader();if(pruneHistory()&&!translating)render();},1000);
+   }else{
+    stopSpeech();stopClock();clearInterval(chatTimer);chatTimer=null;
+    box.replaceChildren();composer.replaceChildren();history=[];translations=[];draft='';translationDraft='';
+   }
+  }).observe(page,{attributes:true,attributeFilter:['class']});
+  const viewport=window.visualViewport;
+  const resize=()=>{if(viewport)page.style.setProperty('--foxly-height',viewport.height+'px');};
+  viewport?.addEventListener('resize',resize);resize();
+  document.addEventListener('visibilitychange',()=>{
+   if(document.hidden){stopSpeech();stopClock();}
+   else{if(active()&&pruneHistory()&&!translating)render();syncClock();}
+  });
   const card=document.getElementById('study-card');if(card){card.setAttribute('role','button');card.tabIndex=0;card.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();study();}};}
  }
  window.marcelaTeacher=Object.freeze({open,study});window._sqLearn=open;

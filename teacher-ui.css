@@ -1,121 +1,149 @@
 #teacher-view {
-  background: #f7f7f7;
-  color: #000;
-  font-family: Nunito, system-ui;
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  height: var(--foxly-height, 100dvh);
+  min-height: 0;
+  overflow: hidden;
+  background: linear-gradient(#3c4143, #14191c);
+  color: #f7f7f7;
+  font: 16px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color-scheme: dark;
 }
+body:has(#teacher-view.active) > :is(#marcela-signout, #marcela-save-status) { display: none; }
 #teacher-view .teacher-wrap {
-  width: 100%;
-  max-width: 680px;
-  margin: 0 auto;
-  padding: calc(60px + env(safe-area-inset-top, 0px)) 20px calc(32px + env(safe-area-inset-bottom));
-}
-.teacher-nav, .teacher-help, .teacher-token-pool {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.teacher-nav { justify-content: space-between; margin-bottom: 16px; }
-.teacher-unit { font-size: 22px; font-weight: 900; margin-top: 14px; }
-.teacher-dialogue {
-  display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 16px;
-  margin: 24px 0 20px;
+  width: 100%;
+  min-height: 0;
+  max-width: 760px;
+  margin-inline: auto;
 }
-.teacher-bubble {
+.foxly-header {
+  flex: none;
+  padding: max(12px, env(safe-area-inset-top)) 16px 10px;
+  background: #353638;
+}
+.foxly-meta {
+  display: flex;
+  justify-content: space-between;
+  padding-inline: 12px;
+  font-size: 15px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.foxly-bar {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.foxly-bar h1 {
+  font-size: clamp(16px, 4.5vw, 22px);
+  text-align: center;
+  font-weight: 750;
+}
+#teacher-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 9px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 17px;
+}
+.foxly-bubble {
   position: relative;
-  width: fit-content;
-  max-width: 94%;
-  min-width: 0;
-  background: #fff;
-  border: 2px solid #000;
-  border-radius: 38px;
-  padding: 20px clamp(18px, 5vw, 30px);
-  overflow-wrap: anywhere;
-}
-.teacher-bubble::before {
-  content: '';
-  position: absolute;
-  top: 30px;
-  width: 14px;
-  height: 14px;
-  background: #fff;
-  border: solid #000;
-  border-width: 0 0 2px 2px;
-  transform: rotate(45deg);
-  pointer-events: none;
-}
-.teacher-voice { align-self: flex-start; }
-.teacher-voice::before { left: -9px; }
-.teacher-reply { align-self: flex-end; }
-.teacher-reply::before { right: -9px; transform: rotate(225deg); }
-.teacher-german, .teacher-czech, .teacher-example, .teacher-exercise-prompt {
+  flex: none;
+  max-width: min(84%, 580px);
+  padding: 9px 13px 5px;
+  border-radius: 19px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  line-height: 1.5;
+  line-height: 1.42;
 }
-.teacher-german { font-size: clamp(17px, 4.5vw, 22px); font-weight: 800; }
-.teacher-czech { font-size: 15px; }
-.teacher-thought {
-  position: relative;
-  align-self: flex-start;
-  margin-left: clamp(12px, 8vw, 54px);
-  max-width: calc(100% - 54px);
-  padding: 29px clamp(25px, 7vw, 43px);
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-3 -3 326 126' preserveAspectRatio='none'%3E%3Cpath fill='white' stroke='black' stroke-width='2' vector-effect='non-scaling-stroke' d='M22 29Q26 8 63 12Q83 -3 119 8Q150 -5 181 7Q212 -4 238 10Q271 4 285 21Q319 20 315 48Q329 65 312 80Q315 102 282 104Q260 121 227 111Q201 125 167 113Q138 124 104 112Q72 122 48 105Q14 109 15 86Q-6 77 7 57Q-1 37 22 29Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-}
-.teacher-thought::before, .teacher-thought::after {
+.foxly-left { align-self: flex-start; background: #202222; border-bottom-left-radius: 6px; }
+.foxly-right { align-self: flex-end; background: #484849; border-bottom-right-radius: 6px; }
+.foxly-bubble::after {
   content: '';
   position: absolute;
-  background: #fff;
-  border: 2px solid #000;
-  border-radius: 50%;
+  bottom: 0;
+  width: 10px;
+  height: 11px;
+  background: inherit;
+  pointer-events: none;
 }
-.teacher-thought::before { width: 12px; height: 12px; left: -15px; top: 9px; }
-.teacher-thought::after { width: 7px; height: 7px; left: -27px; top: 0; }
+.foxly-left::after { left: -6px; clip-path: polygon(65% 0, 100% 0, 100% 70%, 64% 93%, 0 100%, 36% 70%); }
+.foxly-right::after { right: -6px; clip-path: polygon(35% 0, 0 0, 0 70%, 36% 93%, 100% 100%, 64% 70%); }
+.foxly-time { display: block; text-align: right; color: #cbcbcb; font-size: 11px; }
+.foxly-prompt { margin-top: 7px; font-weight: 650; }
+.foxly-translation { margin-top: 6px; color: #dedede; }
+.foxly-translation summary { width: fit-content; cursor: pointer; font-size: 13px; font-weight: 750; }
+.foxly-translation p { margin-block: 4px; font-size: .94em; }
+#foxly-composer {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  max-height: 52%;
+  background: #242526;
+  padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+}
+.foxly-compose-main { flex: 1; min-width: 0; max-height: 100%; overflow-y: auto; }
+.foxly-input-row { display: flex; align-items: flex-end; gap: 7px; width: 100%; }
+#teacher-view textarea, .foxly-tray {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 13px;
+  color: inherit;
+  background: #393a3b;
+  border: 1px solid #656566;
+  border-radius: 22px;
+  font: inherit;
+}
+#teacher-view textarea { resize: none; max-height: 110px; field-sizing: content; }
+#teacher-view textarea::placeholder { color: #d3d3d3; }
 .teacher-button {
-  font: 800 15px Nunito, system-ui;
-  background: #000;
-  color: white;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 10px 15px;
-  margin: 4px 4px 4px 0;
-  cursor: pointer;
+  min-width: 44px;
   min-height: 44px;
   max-width: 100%;
+  padding: 6px 11px;
+  border: 1px solid #68696a;
+  border-radius: 22px;
+  background: #525354;
+  color: #fff;
+  font: inherit;
   overflow-wrap: anywhere;
+  cursor: pointer;
 }
-.teacher-button.secondary { background: #fff; color: #000; border-color: #000; }
-.teacher-button:disabled { opacity: .55; cursor: wait; }
-.teacher-button:focus-visible, #teacher-view textarea:focus-visible { outline: 2px solid #000; outline-offset: 3px; }
-#teacher-view textarea {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  border: 1px solid #000;
-  border-radius: 18px;
-  font: 17px Nunito, system-ui;
-  padding: 12px;
-  margin: 8px 0;
-  resize: vertical;
+.teacher-button.secondary { background: #393a3b; }
+.teacher-button:disabled { opacity: .6; cursor: wait; }
+.teacher-button:focus-visible, #teacher-view textarea:focus-visible, .foxly-translation summary:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.foxly-bar button, .foxly-actions > button, .foxly-input-row button[type="submit"] { font-size: 24px; line-height: 1; }
+.foxly-help {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: calc(100% + 6px);
+  width: max-content;
+  max-width: calc(100% - 24px);
+  max-height: min(48dvh, 320px);
+  overflow: auto;
+  padding: 7px;
+  background: #303132;
+  border: 1px solid #666;
+  border-radius: 17px;
 }
-#teacher-view label, .teacher-example, .teacher-exercise-prompt { font-weight: 800; }
-.teacher-reply:has(form), .teacher-reply:has(.teacher-order-tray) { width: min(94%, 480px); }
-.teacher-order-tray {
-  min-height: 48px;
-  margin: 8px 0;
-  padding: 6px 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  list-style: none;
-  background: #eee;
-  border-radius: 14px;
-}
-.teacher-order-tray li { background: #fff; border-radius: 10px; padding: 5px 8px; }
-.teacher-sentence-order .teacher-order-tray li, .teacher-sentence-order .teacher-token-pool button { width: 100%; text-align: left; }
-.teacher-token-pool button[aria-pressed="true"] { opacity: .45; }
-#teacher-status { min-height: 24px; line-height: 1.5; }
-#teacher-content > ul { padding-left: 20px; }
-.teacher-lesson-navigation { margin-bottom: 8px; }
+.foxly-help button { display: block; width: 100%; text-align: left; margin-block: 3px; }
+.foxly-pool, .foxly-tray { display: flex; flex-wrap: wrap; gap: 5px; }
+.foxly-pool { max-height: 18dvh; overflow: auto; margin-bottom: 6px; }
+.foxly-tray { max-height: 15dvh; overflow: auto; padding: 3px; }
+.foxly-pool button[aria-pressed="true"] { border-color: #eee; background: #5c5d5e; }
+.foxly-tile { display: inline-flex; max-width: 100%; min-width: 0; }
+.foxly-tile button { min-width: 0; }
+#teacher-status:not(:empty), #teacher-retry:not(:empty) { flex: none; padding: 4px 13px; background: #242526; }

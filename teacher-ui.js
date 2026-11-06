@@ -150,7 +150,7 @@
    const text=answer.value.trim();
    if(!text){answer.focus();return;}
    answer.blur();
-   onSend(text);
+   return onSend(text);
   };
   parent.append(form);
  }
@@ -193,18 +193,18 @@
  async function translate(text){
   if(translationBusy)return;
   const account=owner,turn=generation;translationBusy=true;render();
+  let failure='';
   try{
    const result=await window.marcelaTranslator.translate(text,'auto');
    if(account!==owner||turn!==generation||user()?.uid!==account)return;
    translations.push({de:text,side:'right',at:Date.now()},{de:result,side:'left',at:Date.now()});
-   translationDraft='';if(translating)render();
-  }catch(error){if(translating&&account===owner&&turn===generation)message(error.message);}
+   translationDraft='';
+  }catch(error){failure=error.message;}
   finally{
-   if(account===owner&&turn===generation){
+   if(account===owner&&turn===generation&&user()?.uid===account){
     translationBusy=false;
     if(translating){
-     const status=document.getElementById('teacher-status').textContent;
-     render();if(status)message(status);
+     render();if(failure)message(failure);
     }
    }
   }

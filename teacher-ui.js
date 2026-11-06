@@ -2,7 +2,7 @@
 (function(){'use strict';
  let view=null,owner=null,busy=false,generation=0,controller=null,audio=null,audioURL=null,speechGeneration=0,speechEnd=null,tick=null,lastTick=0;
  const retention=48*3600000;
- let history=[],translations=[],translating=false,translationBusy=false,translationDraft='',waiting=false,draft='',selected=[],menuOpen=false,chatTimer=null;
+ let history=[],translations=[],translating=false,translationBusy=false,translationDraft='',draft='',selected=[],menuOpen=false,chatTimer=null;
  const user=()=>window.marcelaAuth.user(),active=()=>document.getElementById('teacher-view')?.classList.contains('active');
  const node=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;};
  function button(label,action,secondary=false){const el=node('button',label,secondary?'teacher-button secondary':'teacher-button');el.type='button';el.disabled=busy;el.onclick=action;return el;}
@@ -31,7 +31,6 @@
    const result=await request(operation,event);
    if(outgoing)remember({id:result.sessionId+':answer:'+result.revision,side:'right',de:outgoing});
    if(result.feedback)remember({id:result.sessionId+':feedback:'+result.revision,side:'left',...result.feedback});
-   waiting=!!(result.feedback&&(result.feedback.wait??event?.type==='continue'));
    if(outgoing||result.stepId!==view?.stepId){draft='';selected=[];}
    view=result;menuOpen=false;render();
   }
@@ -215,7 +214,7 @@
  function render(){
   const box=content(),composer=document.getElementById('foxly-composer');
   const focused=document.activeElement;
-  const textTask=view?.status==='active'&&!waiting&&view.kind!=='choice'&&!view.exercise?.items?.length;
+  const textTask=view?.status==='active'&&view.kind!=='choice'&&!view.exercise?.items?.length;
   const composerMode=translating?'translation':view?.kind||'';
   const keepInput=focused?.className==='foxly-text-input'&&composer.contains(focused)&&
    composer.dataset.mode===composerMode&&(translating||textTask);
@@ -232,7 +231,7 @@
    else textComposer(composer,{value:translationDraft,onInput:value=>{translationDraft=value;},onSend:translate});
    if(translationBusy)message('Překládám…');
   }else if(view&&!view.empty){
-   if(!waiting&&!view.endedEarly&&view.status!=='paused'){
+   if(!view.endedEarly&&view.status!=='paused'){
     const exercise=view.exercise;
     remember({id:view.sessionId+':task:'+view.stepId,side:'left',...view.teacher,
      needsTranslation:!view.stepId.startsWith('linked-practice-')||exercise?.mode==='question',
@@ -245,10 +244,7 @@
     return;
    }
    const actions=node('div',undefined,'foxly-compose-main');composer.append(actions);
-   if(waiting){
-    actions.append(button(view.feedback?.wait?'Ano, pokračovat':'Weiter',()=>{waiting=false;render();}));
-    if(view.feedback?.wait&&view.status==='active')actions.append(button('Teď ne',()=>leave('home'),true));
-   }else if(view.status==='paused'){
+   if(view.status==='paused'){
     actions.append(button('Fortsetzen',()=>send('event',{type:'resume'})));
    }else if(view.status==='complete'){
     if(view.plan?.action!=='none')actions.append(button('Nächster Unterricht',()=>send('next')));
@@ -283,7 +279,7 @@
  }
  async function open(){
   if(busy)return;const current=await window.marcelaAuth.ensureUser();if(!current?.verified)return;
-  owner=current.uid;view=null;waiting=false;draft='';selected=[];menuOpen=false;
+  owner=current.uid;view=null;draft='';selected=[];menuOpen=false;
   translating=false;translationBusy=false;translations=[];translationDraft='';readHistory();generation++;stopSpeech();window.stopTimer?.();window.showView('teacher-view');render();await load();
  }
  function study(){if(active())return leave('study');window.stopTimer?.();window.goLearn();}

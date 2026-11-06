@@ -68,7 +68,7 @@
   }catch{history=[];}
   pruneHistory();
  }
- function remember(item,updateTask=false){
+ function remember(item,updateTask=false,beforeId){
   pruneHistory();
   if(!item.de)return;
   const existing=history.find(entry=>entry.id===item.id);
@@ -78,7 +78,11 @@
    }
    return;
   }
-  history.push({...item,at:item.at??Date.now()});saveHistory();
+  const before=beforeId?history.findIndex(entry=>entry.id===beforeId):-1;
+  const stored={...item,at:item.at??(before<0?Date.now():history[before].at)};
+  if(before<0)history.push(stored);
+  else history.splice(before,0,stored);
+  saveHistory();
  }
  function rememberChapterFarewell(result){
   if(result.chapterFarewell?.at>Date.now()-retention)
@@ -260,7 +264,9 @@
   }else if(view&&!view.empty){
    if(!view.endedEarly&&view.status!=='paused'){
     const exercise=view.exercise;
-    remember({id:view.sessionId+':task:'+view.stepId,side:'left',...view.teacher,
+    const taskId=view.sessionId+':task:'+view.stepId;
+    if(view.instruction)remember({id:taskId+':instruction',side:'left',...view.instruction},true,taskId);
+    remember({id:taskId,side:'left',...view.teacher,
      needsTranslation:!view.stepId.startsWith('linked-practice-')||exercise?.mode==='question',
      prompt:exercise?.prompt||'',promptLang:['words','vocabulary','writing'].includes(exercise?.mode)?'cs':''},true);
    }

@@ -31,6 +31,7 @@
    const result=await request(operation,event);
    if(outgoing)remember({id:result.sessionId+':answer:'+result.revision,side:'right',de:outgoing});
    if(result.feedback)remember({id:result.sessionId+':feedback:'+result.revision,side:'left',...result.feedback});
+   rememberChapterFarewell(result);
    if(outgoing||result.stepId!==view?.stepId){draft='';selected=[];}
    view=result;menuOpen=false;render();
   }
@@ -39,7 +40,7 @@
  }
  async function load(){
   if(busy)return;setBusy(true);message('Unterricht wird geladen …');
-  try{view=await request('start');render();}catch(error){message(error.message);const retry=button('Erneut versuchen',load);retry.disabled=false;document.getElementById('teacher-retry').replaceChildren(retry);}finally{setBusy(false);syncClock();}
+  try{view=await request('start');rememberChapterFarewell(view);render();}catch(error){message(error.message);const retry=button('Erneut versuchen',load);retry.disabled=false;document.getElementById('teacher-retry').replaceChildren(retry);}finally{setBusy(false);syncClock();}
  }
  async function speak(slow=false,text=view?.teacher?.de){
   stopSpeech();const seq=speechGeneration;if(!text)return;
@@ -77,7 +78,11 @@
    }
    return;
   }
-  history.push({...item,at:Date.now()});saveHistory();
+  history.push({...item,at:item.at??Date.now()});saveHistory();
+ }
+ function rememberChapterFarewell(result){
+  if(result.chapterFarewell?.at>Date.now()-retention)
+   remember({id:result.sessionId+':chapter-farewell',side:'right',report:true,...result.chapterFarewell});
  }
  const localTime=at=>new Date(at).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
  const goodnight=text=>/^(gute nacht|dobrou noc)[.!?]*$/iu.test(text.trim());
@@ -90,7 +95,7 @@
    outer.append(prompt);
   }
   if(item.correction)outer.append(node('p',item.correction,'foxly-prompt'));
-  if(item.side==='left'&&!translating){
+  if((item.side==='left'||item.report)&&!translating){
    const details=node('details',undefined,'foxly-translation');
    const label=node('summary','Překlad');label.lang='cs';
    const translated=node('p',item.cz||'');translated.lang='cs';
@@ -223,8 +228,9 @@
     panel.append(button(phrase.cz||phrase.de,()=>['repeat','slower'].includes(phrase.effect)
      ?speak(phrase.effect==='slower'):send('event',{type:'help',action:phrase.effect}),true));
    }
-   panel.append(button('Dobrou noc',()=>send('event',{type:'goodnight'},'Dobrou noc'),true));
   }
+  if(view.status==='active'||view.status==='complete'&&!view.endedEarly)
+   panel.append(button('Dobrou noc',()=>send('event',{type:'goodnight'},'Dobrou noc'),true));
   controls.append(plus,panel);parent.append(controls);
  }
  function refreshHeader(){

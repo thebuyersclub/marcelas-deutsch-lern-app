@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Deutsch 🇦🇹">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#FAFAF7">
+<meta name="theme-color" content="#f6f8fa">
 <script>
 (() => {
   const key = 'marcela.theme';
@@ -22,7 +22,7 @@
   const apply = () => {
     const theme = manual || system();
     document.documentElement.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#353638' : '#FAFAF7';
+    document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#353638' : '#f6f8fa';
   };
   apply();
   preference.addEventListener('change', apply);
@@ -67,16 +67,16 @@
   --text:light-dark(#1C1C1E,#f7f7f7); --text2:light-dark(#3C3C43,#dedede); --muted:light-dark(#8E8E93,#bfbfbf);
   --sep:light-dark(rgba(60,60,67,0.13),#585a5b); --sh:0 2px 12px rgba(0,0,0,.07);
   --shl:0 6px 28px rgba(0,0,0,.11); --r:16px;
-  /* Warm Minimal palette */
-  --cream:light-dark(#FAFAF7,#14191c); --cream2:light-dark(#F5F0EB,#353638); --cream3:light-dark(#EDE8E3,#595b5d);
-  --terra:light-dark(#C47B5A,#d0d0d0); --terra-lt:light-dark(#F5EBE4,#353638); --terra-dk:light-dark(#8B4F35,#dedede);
-  --ink:light-dark(#1A1714,#f7f7f7); --ink2:light-dark(#4A3F38,#dedede); --ink3:light-dark(#8C7B72,#bfbfbf);
+  /* Schiefergrau palette */
+  --cream:light-dark(#f6f8fa,#14191c); --cream2:light-dark(#eef1f4,#353638); --cream3:light-dark(#dfe5eb,#595b5d);
+  --terra:light-dark(#5c7185,#d0d0d0); --terra-lt:light-dark(#e7edf3,#353638); --terra-dk:light-dark(#3c5267,#dedede);
+  --ink:light-dark(#1A1714,#f7f7f7); --ink2:light-dark(#3c4650,#dedede); --ink3:light-dark(#606c77,#bfbfbf);
   --action:light-dark(#1a1714,#484849);
   --action-text:light-dark(#fafaf7,#f7f7f7);
   --blue-action:light-dark(#007aff,#484849);
   --red-action:light-dark(#ff3b30,#803d3b);
   --green-action:light-dark(#34c759,#3e6550);
-  --orange-action:light-dark(#ff9500,#615343);
+  --orange-action:light-dark(#ff9500,#48545f);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -87,27 +87,27 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .scroll{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
 
 /* ── TOPBAR ── */
-.topbar{background:light-dark(rgba(250,250,247,.96),#353638);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:52px 18px 12px;border-bottom:1px solid var(--cream3);position:sticky;top:0;z-index:50}
+.topbar{background:light-dark(rgba(246,248,250,.96),#353638);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:52px 18px 12px;border-bottom:1px solid var(--cream3);position:sticky;top:0;z-index:50}
 .topbar-row{display:flex;align-items:center;justify-content:space-between}
 .topbar-title{font-size:28px;font-weight:900;color:var(--ink)}
-.navbar{background:light-dark(rgba(250,250,247,.96),#353638);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:52px 16px 12px;border-bottom:1px solid var(--cream3);display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50}
+.navbar{background:light-dark(rgba(246,248,250,.96),#353638);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:52px 16px 12px;border-bottom:1px solid var(--cream3);display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50}
 .navbar-title{font-size:17px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
 .btn-back{background:none;border:none;color:var(--ink2);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;padding:4px 0;flex-shrink:0;display:flex;align-items:center;gap:2px}
 .btn-inline{background:none;border:none;color:var(--ink2);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;display:inline-flex;align-items:center;gap:4px}
 .btn-icon-circle{width:34px;height:34px;background:var(--action);color:white;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 
-/* ── SPLASH — Warm Minimal ── */
+/* ── SPLASH — Schiefergrau ── */
 #splash{background:var(--cream)}
 .spl-inner{display:flex;flex-direction:column;align-items:flex-start;padding:0 24px 52px}
 .spl-eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-top:56px;margin-bottom:6px}
 .spl-name{font-size:38px;font-weight:900;color:var(--ink);line-height:1.05;margin-bottom:4px}
 .spl-sub{font-size:14px;color:var(--ink3);margin-bottom:24px;font-weight:600}
-/* Ring — Terrakotta */
+/* Ring — Schiefergrau */
 .ring-wrap{position:relative;width:100%;margin:0 0 20px;cursor:pointer}
-.ring-row{display:flex;align-items:center;gap:14px;background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:12px 16px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.ring-row{display:flex;align-items:center;gap:14px;background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:12px 16px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(24,35,46,.05),0 8px 24px rgba(24,35,46,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .ring-svg-sm{transform:rotate(-90deg);display:block;flex-shrink:0}
 .ring-track{fill:none;stroke:var(--cream3);stroke-width:10}
-.ring-prog{fill:none;stroke-width:10;stroke-linecap:round;stroke-dasharray:175.9;stroke-dashoffset:175.9;transition:stroke-dashoffset .9s ease;stroke:light-dark(#C47B5A,#bdbdbd)}
+.ring-prog{fill:none;stroke-width:10;stroke-linecap:round;stroke-dasharray:175.9;stroke-dashoffset:175.9;transition:stroke-dashoffset .9s ease;stroke:light-dark(#5c7185,#bdbdbd)}
 .ring-ctr-info{flex:1}
 .ring-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3)}
 .ring-time{font-size:26px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
@@ -116,8 +116,8 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .ring-pct{font-size:15px;font-weight:800;color:var(--terra);flex-shrink:0}
 /* Stats */
 .stats-row{display:contents}
-.stat-pill{flex:1;background:light-dark(rgba(255,255,255,.90),#292c2d);border:1px solid light-dark(rgba(255,255,255,.7),#505253);border-radius:14px;padding:12px 8px;text-align:center;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.tr-pill{flex:1;background:light-dark(rgba(255,255,255,.90),#292c2d);border:1px solid light-dark(rgba(255,255,255,.7),#505253);border-radius:14px;padding:12px 8px;text-align:center;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;transition:transform .12s}
+.stat-pill{flex:1;background:light-dark(rgba(255,255,255,.90),#292c2d);border:1px solid light-dark(rgba(255,255,255,.7),#505253);border-radius:14px;padding:12px 8px;text-align:center;box-shadow:0 2px 8px rgba(24,35,46,.05), 0 8px 24px rgba(24,35,46,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.tr-pill{flex:1;background:light-dark(rgba(255,255,255,.90),#292c2d);border:1px solid light-dark(rgba(255,255,255,.7),#505253);border-radius:14px;padding:12px 8px;text-align:center;box-shadow:0 2px 8px rgba(24,35,46,.05), 0 8px 24px rgba(24,35,46,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;transition:transform .12s}
 .tr-pill:active{transform:scale(.96)}
 .tr-pill-ico{display:flex;justify-content:center;margin-bottom:4px}
 .tr-pill-ico svg{width:22px;height:22px;stroke:var(--terra)}
@@ -127,7 +127,7 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .stat-val{font-size:20px;font-weight:900;margin-top:2px;color:var(--ink)}
 .stat-lbl{font-size:10px;font-weight:600;color:var(--ink3);margin-top:1px}
 /* Goal done */
-.goal-banner{display:none;width:100%;background:light-dark(rgba(255,255,255,.85),#292c2d);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(52,199,89,.25);border-radius:18px;padding:16px 18px;text-align:left;margin-bottom:16px;box-shadow:0 4px 20px rgba(52,199,89,.10),0 1px 4px rgba(30,22,14,.06)}
+.goal-banner{display:none;width:100%;background:light-dark(rgba(255,255,255,.85),#292c2d);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(52,199,89,.25);border-radius:18px;padding:16px 18px;text-align:left;margin-bottom:16px;box-shadow:0 4px 20px rgba(52,199,89,.10),0 1px 4px rgba(24,35,46,.06)}
 .goal-banner.show{display:flex;align-items:center;gap:14px}
 .goal-banner-icon{flex-shrink:0;width:42px;height:42px;border-radius:13px;background:rgba(52,199,89,.08);border:1px solid rgba(52,199,89,.18);display:flex;align-items:center;justify-content:center}
 .goal-banner-title{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:2px}
@@ -139,7 +139,7 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .btn-danger{background:var(--red-action);color:white}
 
 /* ── MINI TIMER (home/learn-home) ── */
-.mini-timer{margin:14px 16px 4px;background:light-dark(rgba(255,255,255,.90),#292c2d);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.mini-timer{margin:14px 16px 4px;background:light-dark(rgba(255,255,255,.90),#292c2d);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(24,35,46,.05), 0 8px 24px rgba(24,35,46,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .mini-ring-wrap{width:46px;height:46px;flex-shrink:0}
 .mini-ring-wrap svg{display:block}
 .mini-info{flex:1}
@@ -152,7 +152,7 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .sec-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:18px 20px 8px}
 /* Admin list style */
 .ch-list{padding:0 16px 90px}
-.ch-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:var(--r);padding:15px 16px;margin-bottom:9px;display:flex;align-items:center;gap:13px;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);cursor:pointer;transition:transform .18s, box-shadow .18s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.ch-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:var(--r);padding:15px 16px;margin-bottom:9px;display:flex;align-items:center;gap:13px;box-shadow:0 2px 8px rgba(24,35,46,.05), 0 8px 24px rgba(24,35,46,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);cursor:pointer;transition:transform .18s, box-shadow .18s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .ch-card:active{transform:scale(.97)}
 .ch-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .ch-body{flex:1;min-width:0}
@@ -166,8 +166,8 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .no-ch-s{font-size:13px;margin-top:4px;font-weight:600}
 /* Bento grid — Learn Home */
 .bento-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 90px}
-.bento-card{border-radius:18px;padding:16px;cursor:pointer;transition:transform .18s, box-shadow .18s;border:1px solid light-dark(rgba(255,255,255,.6),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08)}
-.bento-card:active{transform:scale(.97);box-shadow:0 1px 4px rgba(30,22,14,.05)}
+.bento-card{border-radius:18px;padding:16px;cursor:pointer;transition:transform .18s, box-shadow .18s;border:1px solid light-dark(rgba(255,255,255,.6),#505253);box-shadow:0 2px 8px rgba(24,35,46,.05), 0 8px 24px rgba(24,35,46,.08)}
+.bento-card:active{transform:scale(.97);box-shadow:0 1px 4px rgba(24,35,46,.05)}
 .bento-card.wide{grid-column:span 2;display:flex;align-items:center;gap:14px}
 .bento-ico-wrap{display:flex;align-items:center;margin-bottom:10px;flex-shrink:0}
 .bento-card.wide .bento-ico-wrap{margin-bottom:0;margin-right:4px}
@@ -192,7 +192,7 @@ body{font-family:'Nunito',-apple-system,sans-serif;background:var(--bg);color:va
 .panel{display:none;padding:0 16px 90px}
 .panel.on{display:block}
 /* Add forms */
-.add-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253)}
+.add-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(24,35,46,.05), 0 8px 24px rgba(24,35,46,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253)}
 .add-title{font-size:14px;font-weight:800;margin-bottom:12px}
 .frow{display:flex;gap:10px}
 .frow .fg{flex:1}
@@ -207,7 +207,7 @@ textarea.fc{resize:vertical;min-height:68px}
 .btn-add.green{background:var(--green-action)}
 .btn-add.ghost{background:var(--bg2);color:var(--text2)}
 /* List items */
-.list-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:var(--r);box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);margin-bottom:10px;overflow:hidden}
+.list-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:var(--r);box-shadow:0 2px 8px rgba(24,35,46,.05), 0 8px 24px rgba(24,35,46,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);margin-bottom:10px;overflow:hidden}
 .li-row{padding:13px 14px;border-bottom:1px solid var(--sep);display:flex;align-items:flex-start;gap:10px}
 .li-row:last-child{border-bottom:none}
 .li-body{flex:1;min-width:0}
@@ -217,7 +217,7 @@ textarea.fc{resize:vertical;min-height:68px}
 .li-title{font-size:14px;font-weight:800}
 .li-body-text{font-size:13px;color:var(--text2);line-height:1.5;margin-top:3px}
 .li-tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;margin-bottom:4px}
-.li-tag.orange{background:light-dark(#FFF6EC,#333536);color:var(--orange)}
+.li-tag.orange{background:light-dark(#edf0f4,#333536);color:var(--orange)}
 .li-tag.purple{background:light-dark(#F5EEFF,#303538);color:var(--purple)}
 .li-tag.blue{background:var(--terra-lt);color:var(--terra-dk)}
 .btn-del{background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:0 4px;flex-shrink:0;display:flex;align-items:center}
@@ -243,8 +243,8 @@ textarea.fc{resize:vertical;min-height:68px}
 .dir-sel{margin:10px 16px 0;background:var(--sur);border-radius:12px;padding:14px;box-shadow:var(--sh)}
 .dir-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 16px 24px}
-.mode-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:18px;padding:22px 12px 18px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);transition:transform .18s, box-shadow .18s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.mode-card:active{transform:scale(.96);box-shadow:0 1px 4px rgba(30,22,14,.04)}
+.mode-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:18px;padding:22px 12px 18px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(24,35,46,.05), 0 8px 24px rgba(24,35,46,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);transition:transform .18s, box-shadow .18s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.mode-card:active{transform:scale(.96);box-shadow:0 1px 4px rgba(24,35,46,.04)}
 .mode-card.disabled{opacity:.35;pointer-events:none}
 .mode-ico{margin-bottom:12px;display:flex;align-items:center;justify-content:center;color:var(--ink)}
 .mode-ico svg{width:32px;height:32px;stroke:var(--ink)}
@@ -256,7 +256,7 @@ textarea.fc{resize:vertical;min-height:68px}
 /* ── PRACTICE — Light warm header, dezent ── */
 #practice{background:var(--cream2)}
 .p-topbar{
-  background:light-dark(rgba(250,248,245,.97),#353638);
+  background:light-dark(rgba(246,248,250,.97),#353638);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   padding:52px 18px 10px;
   display:flex;align-items:center;gap:10px;
@@ -264,19 +264,19 @@ textarea.fc{resize:vertical;min-height:68px}
 }
 .btn-close{
   width:28px;height:28px;
-  background:rgba(30,22,14,.07);
+  background:rgba(24,35,46,.07);
   border:none;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   color:var(--ink3);cursor:pointer;flex-shrink:0;
 }
 .p-prog-wrap{flex:1;padding:0 6px}
-.p-prog-bar{height:3px;background:rgba(30,22,14,.08);border-radius:3px;overflow:hidden}
-.p-prog-fill{height:100%;background:linear-gradient(90deg,light-dark(#C47B5A,#bdbdbd),light-dark(#E8A882,#e2e2e2));border-radius:3px;transition:width .5s ease}
+.p-prog-bar{height:3px;background:rgba(24,35,46,.08);border-radius:3px;overflow:hidden}
+.p-prog-fill{height:100%;background:linear-gradient(90deg,light-dark(#5c7185,#bdbdbd),light-dark(#8295a8,#e2e2e2));border-radius:3px;transition:width .5s ease}
 .p-count{font-size:11px;font-weight:700;color:var(--ink3);flex-shrink:0;font-variant-numeric:tabular-nums}
 .p-end-btn{background:none;border:none;color:var(--ink3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;padding:0 0 0 6px;opacity:.6}
 /* Timer strip — same light tone, very compact */
 .p-timer-strip{
-  background:light-dark(rgba(250,248,245,.97),#353638);
+  background:light-dark(rgba(246,248,250,.97),#353638);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   padding:5px 18px 8px;
   display:flex;align-items:center;gap:8px;
@@ -289,7 +289,7 @@ textarea.fc{resize:vertical;min-height:68px}
 .p-mode-lbl{
   text-align:center;font-size:10px;font-weight:700;
   color:var(--ink3);text-transform:uppercase;letter-spacing:1.5px;
-  background:light-dark(rgba(250,248,245,.97),#353638);
+  background:light-dark(rgba(246,248,250,.97),#353638);
   padding:6px 16px 10px;margin:0;
   border-bottom:1px solid var(--cream3);
   opacity:.8;
@@ -323,7 +323,7 @@ textarea.fc{resize:vertical;min-height:68px}
 .fc-btn{flex:1;padding:14px;border-radius:14px;border:none;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;transition:transform .1s}
 .fc-btn:active{transform:scale(.96)}
 .fc-wrong{background:light-dark(#FFF0EE,#442d2d);color:var(--red)}
-.fc-right{background:light-dark(#F5EBE4,#333536);color:var(--terra-dk)}
+.fc-right{background:light-dark(#e7edf3,#333536);color:var(--terra-dk)}
 
 /* MC options */
 .mc-opts{width:calc(100% - 32px);max-width:360px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
@@ -409,12 +409,12 @@ textarea.fc{resize:vertical;min-height:68px}
 @keyframes lbar{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}
 
 /* ── TRANSLATOR ── */
-.tr-dir-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:light-dark(rgba(255,255,255,.9),#292c2d);border-radius:16px;padding:12px 16px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08)}
+.tr-dir-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:light-dark(rgba(255,255,255,.9),#292c2d);border-radius:16px;padding:12px 16px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(24,35,46,.05),0 8px 24px rgba(24,35,46,.08)}
 .tr-lang-lbl{font-size:14px;font-weight:800;color:var(--ink);flex:1;text-align:center}
 .tr-swap-btn{width:38px;height:38px;background:var(--action);color:white;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform .3s}
 .tr-swap-btn:active{transform:rotate(180deg)}
-.tr-box{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:18px;padding:16px;margin-bottom:10px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08)}
-.tr-out-box{border:1px solid rgba(196,123,90,.2);background:rgba(245,235,228,.4)}
+.tr-box{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:18px;padding:16px;margin-bottom:10px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(24,35,46,.05),0 8px 24px rgba(24,35,46,.08)}
+.tr-out-box{border:1px solid rgba(92,113,133,.2);background:rgba(231,237,243,.4)}
 .tr-box-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);margin-bottom:10px}
 .tr-input{width:100%;background:transparent;border:none;outline:none;font-size:17px;font-weight:600;color:var(--ink);font-family:inherit;resize:none;line-height:1.6;min-height:80px}
 .tr-output{font-size:17px;font-weight:600;color:var(--ink);line-height:1.6;min-height:40px;white-space:pre-wrap}
@@ -424,10 +424,10 @@ textarea.fc{resize:vertical;min-height:68px}
 .tr-translate-btn{width:100%;background:var(--action);color:var(--action-text);border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
 .tr-translate-btn:active{opacity:.85}
 .tr-translate-btn.loading{opacity:.6;pointer-events:none}
-.tr-save-row{margin-top:12px;padding-top:12px;border-top:1px solid rgba(196,123,90,.15);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tr-save-row{margin-top:12px;padding-top:12px;border-top:1px solid rgba(92,113,133,.15);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tr-save-label{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px}
-.tr-save-btn{display:flex;align-items:center;gap:5px;background:var(--terra-lt);color:var(--terra-dk);border:1px solid rgba(196,123,90,.2);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
-.tr-save-btn:active{background:rgba(196,123,90,.2)}
+.tr-save-btn{display:flex;align-items:center;gap:5px;background:var(--terra-lt);color:var(--terra-dk);border:1px solid rgba(92,113,133,.2);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
+.tr-save-btn:active{background:rgba(92,113,133,.2)}
 .tr-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -475,12 +475,12 @@ textarea.fc{resize:vertical;min-height:68px}
 
 /* PATCH V2: Grammatik Theorie/Praxis + Tabellenübungen */
 .grammar-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 0 8px}
-.grammar-menu-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:18px;padding:18px 14px;box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);cursor:pointer;transition:transform .15s}
+.grammar-menu-card{background:light-dark(rgba(255,255,255,.92),#292c2d);border-radius:18px;padding:18px 14px;box-shadow:0 2px 8px rgba(24,35,46,.05),0 8px 24px rgba(24,35,46,.08);border:1px solid light-dark(rgba(255,255,255,.65),#505253);cursor:pointer;transition:transform .15s}
 .grammar-menu-card:active{transform:scale(.97)}
 .grammar-menu-ico{font-size:30px;margin-bottom:8px}.grammar-menu-title{font-size:16px;font-weight:900;color:var(--ink)}
 .grammar-menu-sub{font-size:12px;font-weight:600;color:var(--ink3);line-height:1.35;margin-top:4px}.grammar-menu-sub .cz{display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-top:3px}
 .gt-admin-grid{display:grid;gap:8px;overflow-x:auto;padding-bottom:4px}.gt-admin-cell{min-width:88px;background:var(--bg);border:1px solid var(--sep);border-radius:10px;padding:7px}.gt-admin-cell.black{background:light-dark(#1A1714,#202222);color:white}
-.gt-admin-cell select,.gt-admin-cell input{width:100%;font-family:inherit;font-size:11px;border:1px solid var(--sep);border-radius:7px;padding:5px;margin-bottom:5px;background:var(--sur);color:var(--text)}.gt-admin-cell.black input,.gt-admin-cell.black select{background:light-dark(#2C2722,#dedede);color:white;border-color:light-dark(#4A3F38,#dedede)}
+.gt-admin-cell select,.gt-admin-cell input{width:100%;font-family:inherit;font-size:11px;border:1px solid var(--sep);border-radius:7px;padding:5px;margin-bottom:5px;background:var(--sur);color:var(--text)}.gt-admin-cell.black input,.gt-admin-cell.black select{background:light-dark(#303941,#dedede);color:white;border-color:light-dark(#3c4650,#dedede)}
 .gt-practice-wrap{width:calc(100% - 24px);max-width:760px;overflow-x:auto;margin:0 auto 14px;background:var(--sur);border-radius:18px;padding:10px;box-shadow:var(--shl)}.gt-practice-table{border-collapse:collapse;width:100%;min-width:420px}
 .gt-practice-table td{border:1px solid var(--sep);min-width:78px;height:48px;text-align:center;padding:6px;font-size:14px;font-weight:800}.gt-black{background:light-dark(#1A1714,#202222);color:white}.gt-white{background:var(--sur);color:var(--text)}
 .gt-white input{width:100%;border:2px solid var(--sep);border-radius:9px;padding:9px 7px;font-family:inherit;font-size:14px;font-weight:800;text-align:center;outline:none}.gt-white input:focus{border-color:var(--terra)}.gt-white input.ok{border-color:var(--green);background:light-dark(#EEFAF2,#263b31);color:var(--green)}.gt-white input.bad{border-color:var(--red);background:light-dark(#FFF0EE,#442d2d);color:var(--red)}
@@ -616,7 +616,7 @@ textarea.fc{resize:vertical;min-height:68px}
   </div>
 </div>
 
-<!-- ═══════════════ SPLASH — Warm Minimal ═══════════════ -->
+<!-- ═══════════════ SPLASH — Schiefergrau ═══════════════ -->
 <div class="view active" id="splash">
   <div class="scroll">
   <div class="spl-inner">
@@ -628,7 +628,7 @@ textarea.fc{resize:vertical;min-height:68px}
     <div id="start-dashboard" style="display:grid;grid-template-columns:2fr 1fr;gap:8px;width:100%;margin:4px 0 16px">
 
       <!-- WETTER links: exakt so hoch wie Datum + Übersetzer rechts -->
-      <div id="wx-card" style="grid-row:1/3;background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:14px 16px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">
+      <div id="wx-card" style="grid-row:1/3;background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:14px 16px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(24,35,46,.05),0 8px 24px rgba(24,35,46,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-bottom:8px" id="wx-location">Standort wird geladen…</div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <div id="wx-icon" style="font-size:28px;flex-shrink:0">⏳</div>
@@ -647,7 +647,7 @@ textarea.fc{resize:vertical;min-height:68px}
       </div>
 
       <!-- RECHTS oben: Datum -->
-      <div id="date-card" style="background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:12px 10px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+      <div id="date-card" style="background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:12px 10px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(24,35,46,.05),0 8px 24px rgba(24,35,46,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
         <div id="date-day" style="font-size:32px;font-weight:900;color:var(--ink);line-height:1">--</div>
         <div id="date-month" style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px"></div>
         <div style="height:1px;background:var(--cream3);width:100%;margin:6px 0"></div>
@@ -678,7 +678,7 @@ textarea.fc{resize:vertical;min-height:68px}
         </div>
       </div>
 
-      <div id="horoscope-card" style="grid-column:2;background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:10px 10px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(30,22,14,.05),0 8px 24px rgba(30,22,14,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:default">
+      <div id="horoscope-card" style="grid-column:2;background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:10px 10px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(24,35,46,.05),0 8px 24px rgba(24,35,46,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:default">
         <div id="last-exam-card" style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3)">Letzte Prüfung</div>
@@ -726,7 +726,7 @@ textarea.fc{resize:vertical;min-height:68px}
     <div class="mini-timer">
       <svg class="mini-ring-wrap" width="46" height="46" viewBox="0 0 46 46">
         <circle cx="23" cy="23" r="18" fill="none" stroke="light-dark(#E5E5EA,#555759)" stroke-width="5" transform="rotate(-90 23 23)"/>
-        <circle id="mini-prog-learn" cx="23" cy="23" r="18" fill="none" stroke="light-dark(#C47B5A,#bdbdbd)" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 23 23)" style="transition:stroke-dashoffset .8s"/>
+        <circle id="mini-prog-learn" cx="23" cy="23" r="18" fill="none" stroke="light-dark(#5c7185,#bdbdbd)" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 23 23)" style="transition:stroke-dashoffset .8s"/>
       </svg>
       <div class="mini-info">
         <div class="mini-title">Tagesziel — 1 Stunde</div>
@@ -753,7 +753,7 @@ textarea.fc{resize:vertical;min-height:68px}
     <div class="mini-timer">
       <svg class="mini-ring-wrap" width="46" height="46" viewBox="0 0 46 46">
         <circle cx="23" cy="23" r="18" fill="none" stroke="light-dark(#E5E5EA,#555759)" stroke-width="5" transform="rotate(-90 23 23)"/>
-        <circle id="mini-prog-home" cx="23" cy="23" r="18" fill="none" stroke="light-dark(#C47B5A,#bdbdbd)" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 23 23)" style="transition:stroke-dashoffset .8s"/>
+        <circle id="mini-prog-home" cx="23" cy="23" r="18" fill="none" stroke="light-dark(#5c7185,#bdbdbd)" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="113.1" transform="rotate(-90 23 23)" style="transition:stroke-dashoffset .8s"/>
       </svg>
       <div class="mini-info">
         <div class="mini-title">Tagesziel — 1 Stunde</div>
@@ -965,7 +965,7 @@ textarea.fc{resize:vertical;min-height:68px}
       <div class="mode-card" id="mode-sentorder" onclick="startPractice('sentorder')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div><div class="mode-name">Satz-Reihenfolge</div>
         <div class="mode-desc">Sätze eines Absatzes ordnen<span class="cz">Seřadit věty v odstavci</span></div>
-        <div class="mode-bar" style="background:light-dark(#C47B5A,#bdbdbd)"></div>
+        <div class="mode-bar" style="background:light-dark(#5c7185,#bdbdbd)"></div>
       </div>
       <div class="mode-card" id="mode-fill" onclick="startPractice('fill')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="8" y1="18" x2="21" y2="18"/></svg></div><div class="mode-name">Lückentext</div>
@@ -985,7 +985,7 @@ textarea.fc{resize:vertical;min-height:68px}
       <div class="mode-card" id="mode-clock" onclick="startPractice('clock')">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="mode-name">Uhrzeit</div>
         <div class="mode-desc">Uhrzeit auf Deutsch schreiben<span class="cz">Napsat čas německy</span></div>
-        <div class="mode-bar" style="background:light-dark(#C47B5A,#bdbdbd)"></div>
+        <div class="mode-bar" style="background:light-dark(#5c7185,#bdbdbd)"></div>
       </div>
       <div class="mode-card" id="mode-grammar" onclick="showGrammar()">
         <div class="mode-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div class="mode-name">Grammatik</div>
@@ -1249,11 +1249,11 @@ textarea.fc{resize:vertical;min-height:68px}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   DESIGN-SYSTEM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Palette: "Warm Minimal" — Creme, Terrakotta, Fast-Schwarz
-    --cream/light-dark(#FAFAF7,#14191c)   Hintergrund Splash
-    --terra/light-dark(#C47B5A,#bdbdbd)   Akzentfarbe (Ring, Icons, Links)
+  Palette: "Schiefergrau" — Creme, Schiefergrau, Fast-Schwarz
+    --cream/light-dark(#f6f8fa,#14191c)   Hintergrund Splash
+    --terra/light-dark(#5c7185,#bdbdbd)   Akzentfarbe (Ring, Icons, Links)
     --ink/light-dark(#1A1714,#202222)     Primärtext, Buttons
-    --ink3/light-dark(#8C7B72,#bfbfbf)    Sekundärtext, Labels
+    --ink3/light-dark(#606c77,#bfbfbf)    Sekundärtext, Labels
   Font: Nunito (Google Fonts), 400–900
   Icons: Lucide-Stil SVG (1.5px Stroke, rounded, keine Emojis außer Flaggen + 🎉)
   Cards: border-radius 14px, Glassmorphism-Schatten (2-layer)
@@ -1436,7 +1436,7 @@ let LS_KEY = 'marcela_test_v1_' + PROJECT_ID + '_signed_out';
 //          WICHTIG: Timer läuft NUR in startPractice/startWeakPractice.
 //          Übersetzer, Navigation → KEIN Timer.
 //          Speichert alle 4s in stats[heute]. Tageswechsel um Mitternacht.
-//          Ring-Visualisierung: r=28, Umfang=175.9px, Terrakotta-Farbe.
+//          Ring-Visualisierung: r=28, Umfang=175.9px, Schiefergrau-Farbe.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const GOAL_SECS = 3600;
 let _cache = { chapters: [], stats: {}, streak: 0 };
@@ -1592,7 +1592,7 @@ function refreshTimers() {
   // Mini rings
   ['home', 'learn'].forEach(id => {
     const mp = document.getElementById('mini-prog-' + id);
-    if (mp) { mp.style.strokeDashoffset = 113.1 * (1 - pct); mp.style.stroke = pct >= 1 ? 'light-dark(#34C759,#79a98a)' : 'light-dark(#C47B5A,#bdbdbd)'; }
+    if (mp) { mp.style.strokeDashoffset = 113.1 * (1 - pct); mp.style.stroke = pct >= 1 ? 'light-dark(#34C759,#79a98a)' : 'light-dark(#5c7185,#bdbdbd)'; }
     const mt = document.getElementById('mini-time-' + id);
     if (mt) { mt.textContent = rem === 0 ? 'Ziel erreicht! 🎉' : fmt(rem); mt.classList.toggle('done', rem === 0); }
   });
@@ -1678,15 +1678,15 @@ function cdBack() {
 const CH_COLORS = ['light-dark(#007AFF,#7f8990)','light-dark(#34C759,#79a98a)','light-dark(#FF9500,#c4a17a)','light-dark(#AF52DE,#a39aaa)','light-dark(#FF3B30,#ce827e)','light-dark(#5AC8FA,#8c9fa5)','light-dark(#FF2D55,#ab818a)','light-dark(#FFCC00,#b1a085)'];
 const CH_EMOJIS = ['●','●','●','●','●','●','●','●']; // unused, replaced below
 
-// Bento background colors — warm, soft
+// Bento background colors — soft
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // SEKTION: KAPITEL-LISTEN (ADMIN + LERN)
 // Zweck:   renderAdminList() → einfache Liste mit Buch-Icon.
 //          renderLearnList() → Bento-Grid (jede 3. Karte breit).
 //          Farben: BENTO_BG[i%8] für Hintergrund, BENTO_BTN[i%8] für Button.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const BENTO_BG = ['light-dark(#EBF3FF,#303538)','light-dark(#EEFAF2,#263b31)','light-dark(#FFF6EC,#333536)','light-dark(#F5EEFF,#303538)','light-dark(#FFF0EE,#442d2d)','light-dark(#E1F5EE,#333536)','light-dark(#FAEEDA,#333536)','light-dark(#F5EBE4,#333536)'];
-const BENTO_BTN = ['light-dark(#007AFF,#7f8990)','light-dark(#34C759,#79a98a)','light-dark(#FF9500,#c4a17a)','light-dark(#AF52DE,#a39aaa)','light-dark(#FF3B30,#ce827e)','light-dark(#0F6E56,#819b8c)','light-dark(#BA7517,#aa9782)','light-dark(#C47B5A,#bdbdbd)'];
+const BENTO_BG = ['light-dark(#EBF3FF,#303538)','light-dark(#EEFAF2,#263b31)','light-dark(#edf0f4,#333536)','light-dark(#F5EEFF,#303538)','light-dark(#FFF0EE,#442d2d)','light-dark(#E1F5EE,#333536)','light-dark(#e7edf3,#333536)','light-dark(#e7edf3,#333536)'];
+const BENTO_BTN = ['light-dark(#007AFF,#7f8990)','light-dark(#34C759,#79a98a)','light-dark(#FF9500,#c4a17a)','light-dark(#AF52DE,#a39aaa)','light-dark(#FF3B30,#ce827e)','light-dark(#0F6E56,#819b8c)','light-dark(#5c7185,#9aabba)','light-dark(#5c7185,#bdbdbd)'];
 
 function renderLearnList() {
   refreshTimers();
@@ -3086,7 +3086,7 @@ function showFeedback(ok, answer) {
     const motiv = _motivTexts[_motivIdx % _motivTexts.length];
     _motivIdx++;
     fbAns.innerHTML = 'Richtige Antwort: ' + answer
-      + '<br><span style="color:light-dark(#C47B5A,#bdbdbd);font-style:italic;font-size:13px;margin-top:6px;display:block">' + motiv + '</span>';
+      + '<br><span style="color:light-dark(#5c7185,#bdbdbd);font-style:italic;font-size:13px;margin-top:6px;display:block">' + motiv + '</span>';
   } else {
     fbAns.textContent = 'Weiter so, Marcela!';
   }
@@ -3276,7 +3276,7 @@ function showToast(msg, type) {
     if (!dot) {
       dot = document.createElement('div');
       dot.id = '_sq_dot';
-      dot.style.cssText = 'position:fixed;bottom:8px;left:8px;width:6px;height:6px;border-radius:50%;background:light-dark(#C47B5A,#bdbdbd);z-index:9999;opacity:0;transition:opacity .1s';
+      dot.style.cssText = 'position:fixed;bottom:8px;left:8px;width:6px;height:6px;border-radius:50%;background:light-dark(#5c7185,#bdbdbd);z-index:9999;opacity:0;transition:opacity .1s';
       document.body.appendChild(dot);
     }
     dot.style.opacity = '1';
@@ -3543,7 +3543,7 @@ async function init() {
   • Neue Farben: CSS-Variable in :root hinzufügen
   • border-radius: IMMER 14px (Regel: kein Stilbruch!)
   • Cards: Glassmorphism-Muster: background rgba(255,255,255,.90),
-    box-shadow: 0 2px 8px rgba(30,22,14,.05), 0 8px 24px rgba(30,22,14,.08)
+    box-shadow: 0 2px 8px rgba(24,35,46,.05), 0 8px 24px rgba(24,35,46,.08)
     backdrop-filter: blur(8px)
   • Icons: Lucide SVG-Stil, 1.5px stroke, stroke-linecap/linejoin round
   • Keine Emojis in onclick! Immer data-Attribute.
@@ -4068,7 +4068,7 @@ function renderGlobalExamCardHtml() {
   const desc = count === 1
     ? 'Prüfung aus 1 Kapitel'
     : 'Prüfung aus ' + count + ' Kapiteln';
-  return '<div class="bento-card wide" id="global-exam-card" style="background:light-dark(#F5EBE4,#333536);border:1px solid rgba(196,123,90,.22);' + (!hasAny ? 'opacity:.45;pointer-events:none;' : '') + '" onclick="startGlobalLessonCheck()">'
+  return '<div class="bento-card wide" id="global-exam-card" style="background:light-dark(#e7edf3,#333536);border:1px solid rgba(92,113,133,.22);' + (!hasAny ? 'opacity:.45;pointer-events:none;' : '') + '" onclick="startGlobalLessonCheck()">'
     + '<div class="bento-ico-wrap" style="color:var(--ink)">'
     + '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'
     + '</div>'
@@ -4964,7 +4964,7 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
     const chapters = arr((_cache || {}).chapters);
     const hasAny = hasAnyGlobalPracticeContent();
     const desc = chapters.length === 1 ? 'Prüfung aus 1 Kapitel' : 'Prüfung aus ' + chapters.length + ' Kapiteln';
-    return '<div class="bento-card wide" id="global-exam-card" style="background:light-dark(#F5EBE4,#333536);border:1px solid rgba(196,123,90,.22);' + (!hasAny ? 'opacity:.45;pointer-events:none;' : '') + '">' +
+    return '<div class="bento-card wide" id="global-exam-card" style="background:light-dark(#e7edf3,#333536);border:1px solid rgba(92,113,133,.22);' + (!hasAny ? 'opacity:.45;pointer-events:none;' : '') + '">' +
       '<div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>' +
       '<div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div>' +
       '<div class="bento-meta">' + (hasAny ? desc + ' · alle Inhalte gemischt' : 'Noch keine prüfbaren Inhalte') + '</div>' +
@@ -5084,7 +5084,7 @@ window.startGlobalLessonCheck = function startGlobalLessonCheckStrictLessons() {
   function globalCardHtml(){
     var chapters = arr((_cache||{}).chapters);
     var desc = chapters.length === 1 ? 'Prüfung aus 1 Kapitel' : 'Prüfung aus ' + chapters.length + ' Kapiteln';
-    return '<div class="bento-card wide" id="global-exam-card" style="background:light-dark(#F5EBE4,#333536);border:1px solid rgba(196,123,90,.22);pointer-events:auto;cursor:pointer">'
+    return '<div class="bento-card wide" id="global-exam-card" style="background:light-dark(#e7edf3,#333536);border:1px solid rgba(92,113,133,.22);pointer-events:auto;cursor:pointer">'
       + '<div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>'
       + '<div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div>'
       + '<div class="bento-meta">'+desc+' · alle Inhalte gemischt</div>'
@@ -5177,8 +5177,8 @@ Ziel:
     if(typeof refreshTimers==='function') refreshTimers(); var container=byId('learn-ch-list'); if(!container)return; var chs=chapters();
     if(!chs.length){ container.className='ch-list'; container.innerHTML='<div class="no-ch"><div class="no-ch-icon">📚</div><div class="no-ch-t">Noch keine Kapitel</div><div class="no-ch-s">Gehe zu „Inhalte verwalten“ um Kapitel anzulegen</div></div>'; return; }
     container.className='bento-grid'; var html='';
-    html+='<div class="bento-card wide" id="global-exam-card" data-action="global-exam" style="background:light-dark(#F5EBE4,#333536);border:1px solid rgba(196,123,90,.22);cursor:pointer;pointer-events:auto"><div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div><div class="bento-meta">Alle Kapitel · alle Inhalte gemischt</div><div class="bento-meta" style="margin-top:2px;color:var(--ink3)">Zkušební simulace ze všech kapitol</div><div class="bento-meta" id="global-exam-record" style="margin-top:3px;font-weight:800">'+escText(globalExamRecordTextStable())+'</div><button class="bento-btn" type="button" data-action="global-exam" style="background:var(--action)">Prüfung starten</button></div></div>';
-    var bg=(typeof BENTO_BG!=='undefined')?BENTO_BG:['light-dark(#EBF3FF,#303538)','light-dark(#EEFAF2,#263b31)','light-dark(#FFF6EC,#333536)','light-dark(#F5EEFF,#303538)','light-dark(#FFF0EE,#442d2d)','light-dark(#E1F5EE,#333536)','light-dark(#FAEEDA,#333536)','light-dark(#F5EBE4,#333536)']; var btn=(typeof BENTO_BTN!=='undefined')?BENTO_BTN:['light-dark(#007AFF,#7f8990)','light-dark(#34C759,#79a98a)','light-dark(#FF9500,#c4a17a)','light-dark(#AF52DE,#a39aaa)','light-dark(#FF3B30,#ce827e)','light-dark(#0F6E56,#819b8c)','light-dark(#BA7517,#aa9782)','light-dark(#C47B5A,#bdbdbd)'];
+    html+='<div class="bento-card wide" id="global-exam-card" data-action="global-exam" style="background:light-dark(#e7edf3,#333536);border:1px solid rgba(92,113,133,.22);cursor:pointer;pointer-events:auto"><div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div><div class="bento-meta">Alle Kapitel · alle Inhalte gemischt</div><div class="bento-meta" style="margin-top:2px;color:var(--ink3)">Zkušební simulace ze všech kapitol</div><div class="bento-meta" id="global-exam-record" style="margin-top:3px;font-weight:800">'+escText(globalExamRecordTextStable())+'</div><button class="bento-btn" type="button" data-action="global-exam" style="background:var(--action)">Prüfung starten</button></div></div>';
+    var bg=(typeof BENTO_BG!=='undefined')?BENTO_BG:['light-dark(#EBF3FF,#303538)','light-dark(#EEFAF2,#263b31)','light-dark(#edf0f4,#333536)','light-dark(#F5EEFF,#303538)','light-dark(#FFF0EE,#442d2d)','light-dark(#E1F5EE,#333536)','light-dark(#e7edf3,#333536)','light-dark(#e7edf3,#333536)']; var btn=(typeof BENTO_BTN!=='undefined')?BENTO_BTN:['light-dark(#007AFF,#7f8990)','light-dark(#34C759,#79a98a)','light-dark(#FF9500,#c4a17a)','light-dark(#AF52DE,#a39aaa)','light-dark(#FF3B30,#ce827e)','light-dark(#0F6E56,#819b8c)','light-dark(#5c7185,#9aabba)','light-dark(#5c7185,#bdbdbd)'];
     chs.forEach(function(ch,i){ var color=btn[i%btn.length],back=bg[i%bg.length],wide=(i%3===2)?' wide':''; html+='<div class="bento-card'+wide+'" data-action="open-learning" data-chapter-id="'+escText(ch.id)+'" style="background:'+back+';cursor:pointer"><div class="bento-ico-wrap" style="color:'+color+'"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div class="bento-info"><div class="bento-name">'+escText(ch.name||'Kapitel')+'</div><div class="bento-meta">'+escText(chapterMeta(ch))+'</div>'+(hasAnyChapterContent(ch)?'<button class="bento-btn" type="button" data-action="open-learning" data-chapter-id="'+escText(ch.id)+'" style="background:'+color+'">Üben</button>':'')+'</div></div>'; });
     container.innerHTML=html;
   }
@@ -5971,7 +5971,7 @@ Renderer und vorhandene Views bleiben erhalten.
     if(typeof oldRenderLearnList==='function') oldRenderLearnList.apply(this,arguments);
     var list=byId('learn-ch-list'); if(!list) return;
     if(!byId('global-exam-card')){
-      var card=document.createElement('div'); card.className='bento-card wide'; card.id='global-exam-card'; card.style.cssText='background:light-dark(#F5EBE4,#333536);border:1px solid rgba(196,123,90,.22);cursor:pointer;pointer-events:auto';
+      var card=document.createElement('div'); card.className='bento-card wide'; card.id='global-exam-card'; card.style.cssText='background:light-dark(#e7edf3,#333536);border:1px solid rgba(92,113,133,.22);cursor:pointer;pointer-events:auto';
       card.innerHTML='<div class="bento-ico-wrap" style="color:var(--ink)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="bento-info"><div class="bento-name">Prüfungs-Simulation</div><div class="bento-meta">Alle Kapitel · alle Inhalte gemischt</div><button class="bento-btn" type="button" style="background:var(--action)">Prüfung starten</button></div>';
       list.insertBefore(card,list.firstChild);
     }

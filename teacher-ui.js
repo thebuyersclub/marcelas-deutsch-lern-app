@@ -82,7 +82,7 @@
  }
  function rememberChapterFarewell(result){
   if(result.chapterFarewell?.at>Date.now()-retention)
-   remember({id:result.sessionId+':chapter-farewell',side:'right',report:true,...result.chapterFarewell});
+   remember({id:result.sessionId+':chapter-farewell',side:'right',report:true,...result.chapterFarewell},true);
  }
  const localTime=at=>new Date(at).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
  const goodnight=text=>/^(gute nacht|dobrou noc)[.!?]*$/iu.test(text.trim());

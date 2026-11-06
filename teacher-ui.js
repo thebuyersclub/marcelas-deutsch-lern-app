@@ -13,11 +13,12 @@
  function content(){return document.getElementById('teacher-content');}
  function message(text){const el=document.getElementById('teacher-status');if(el)el.textContent=text;}
  function setBusy(value){busy=value;document.querySelectorAll('#teacher-view button').forEach(el=>el.disabled=value);content()?.setAttribute('aria-busy',String(value));}
- async function request(operation,event){
+ async function request(operation,event,messages){
   if(user()?.uid!==owner)throw Error('Bitte erneut anmelden.');
   const seq=generation,body={operation,chat:true,requestId:crypto.randomUUID()};
   if(['event','review','restart','next'].includes(operation))body.revision=view.revision;
   if(event)body.event={...event,stepId:view.stepId};
+  if(messages)body.messages=messages;
   const requestController=new AbortController();
   if(operation!=='state')controller=requestController;
   const timeout=setTimeout(()=>requestController.abort(),operation==='state'?10000:55000);
@@ -31,6 +32,7 @@
   if(busy)return;stopSpeech();setBusy(true);message('Einen Moment …');
   try{
    const result=await request(operation,event);
+   mergeRemoteHistory(result);
    if(outgoing)remember({id:result.sessionId+':answer:'+result.revision,side:'right',de:outgoing});
    if(result.feedback)remember({id:result.sessionId+':feedback:'+result.revision,side:'left',...result.feedback});
    rememberChapterFarewell(result);
@@ -42,7 +44,12 @@
  }
  async function load(){
   if(busy)return;setBusy(true);message('Unterricht wird geladen …');
-  try{view=await request('start');rememberChapterFarewell(view);render();}catch(error){message(error.message);const retry=button('Erneut versuchen',load);retry.disabled=false;document.getElementById('teacher-retry').replaceChildren(retry);}finally{setBusy(false);syncClock();}
+  try{
+   view=await request('start');
+   const imported=await importLocalHistory();
+   rememberChapterFarewell(view);render();
+   if(!imported)message('Historii se zatím nepodařilo synchronizovat.');
+  }catch(error){message(error.message);const retry=button('Erneut versuchen',load);retry.disabled=false;document.getElementById('teacher-retry').replaceChildren(retry);}finally{setBusy(false);syncClock();}
  }
  async function refreshCourse(){
   if(!active()||document.hidden||!view||busy||checkingState||translating||draft||selected.length)return;
@@ -52,7 +59,7 @@
    const latest=await request('state');
    if(!active()||document.hidden||busy||translating||draft||selected.length||view!==current||
       latest.empty||latest.revision<=current.revision)return;
-   view=latest;
+   view=latest;mergeRemoteHistory(latest);
    rememberChapterFarewell(latest);render();syncClock();
   }catch{
    // Keep the current screen on temporary connection failures.
@@ -84,12 +91,46 @@
   }catch{history=[];}
   pruneHistory();
  }
+ function mergeRemoteHistory(result){
+  if(!Array.isArray(result.chatHistory))return;
+  const local=new Map(history.map(item=>[item.id,item]));
+  const merged=new Map();
+  for(const item of result.chatHistory){
+   const previous=local.get(item.id);
+   const sameSource=previous&&['de','cz','prompt','correction'].every(key=>(previous[key]||'')===(item[key]||''));
+   merged.set(item.id,sameSource&&previous.translated?{...item,translated:previous.translated}:item);
+  }
+  for(const item of history)if(!merged.has(item.id))merged.set(item.id,item);
+  history=[...merged.values()].filter(item=>item.at>Date.now()-retention).sort((a,b)=>a.at-b.at);
+  saveHistory();
+ }
+ async function importLocalHistory(){
+  if(!Array.isArray(view.chatHistory))return true;
+  const known=new Set(view.chatHistory.map(item=>item.id));
+  const pending=history.filter(item=>!known.has(item.id));
+  mergeRemoteHistory(view);
+  if(!pending.length)return true;
+  const encoder=new TextEncoder();
+  let batch=[],bytes=0;
+  try{
+   for(const {translated,...item} of pending){
+    const size=encoder.encode(JSON.stringify(item)).length+1;
+    if(size>10000)continue;
+    if(batch.length>=35||bytes+size>10000){
+     view=await request('merge_chat',null,batch);mergeRemoteHistory(view);batch=[];bytes=0;
+    }
+    batch.push(item);bytes+=size;
+   }
+   if(batch.length){view=await request('merge_chat',null,batch);mergeRemoteHistory(view);}
+   return true;
+  }catch{return false;}
+ }
  function remember(item,updateTask=false,beforeId){
   pruneHistory();
   if(!item.de)return;
   const existing=history.find(entry=>entry.id===item.id);
   if(existing){
-   if(updateTask&&['de','cz','prompt','promptLang','needsTranslation'].some(key=>existing[key]!==item[key])){
+   if(updateTask&&['de','cz','prompt','promptLang','needsTranslation'].some(key=>(existing[key]||'')!==(item[key]||''))){
     Object.assign(existing,item);delete existing.translated;saveHistory();
    }
    return;
@@ -322,7 +363,7 @@
    }else{
     if(view.kind==='information')actions.append(button('Weiter',()=>send('event',{type:'continue'}),true));
     textComposer(actions,{value:draft,onInput:value=>{draft=value;},onSend:answer=>{
-     if(goodnight(answer)){send('event',{type:'goodnight'},answer);return;}
+     if(goodnight(answer)){send('event',{type:'goodnight',action:/^gute nacht/i.test(answer)?'de':'cs'},answer);return;}
      if(view.kind==='information'){message('Pokračuj tlačítkem Weiter.');return;}
      send('event',{type:view.kind==='exercise'?'practice':'answer',answer},answer);
     }});

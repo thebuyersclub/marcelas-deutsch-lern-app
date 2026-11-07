@@ -102,6 +102,12 @@
   }
   for(const item of history)if(!merged.has(item.id))merged.set(item.id,item);
   history=[...merged.values()].filter(item=>item.at>Date.now()-retention).sort((a,b)=>a.at-b.at);
+  for(const instruction of history.filter(item=>item.id.endsWith(':instruction'))){
+   const task=merged.get(instruction.id.slice(0,-12));
+   if(!task||!history.includes(task))continue;
+   history.splice(history.indexOf(instruction),1);
+   history.splice(history.indexOf(task),0,instruction);
+  }
   saveHistory();
  }
  async function importLocalHistory(){
@@ -331,7 +337,7 @@
   }else if(view&&!view.empty){
    if(!view.endedEarly&&view.status!=='paused'){
     const exercise=view.exercise;
-    const taskId=view.sessionId+':task:'+view.stepId;
+    const taskId=(view.chatThreadId||view.sessionId)+':task:'+view.stepId;
     const instruction=currentInstruction(view);
     if(instruction)remember({id:taskId+':instruction',side:'left',...instruction},true,taskId);
     remember({id:taskId,side:'left',...view.teacher,

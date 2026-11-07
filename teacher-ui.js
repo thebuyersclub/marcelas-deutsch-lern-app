@@ -1,7 +1,7 @@
 /* Persönlicher Unterricht: Antworten werden ausschließlich am Server bewertet. */
 (function(){'use strict';
  let view=null,owner=null,busy=false,generation=0,controller=null,audio=null,audioURL=null,speechGeneration=0,speechEnd=null,tick=null,lastTick=0,checkingState=false;
- let pendingAudio=false;
+ let pendingAudio=false,pronunciationClip=null,pronunciationMessage='';
  let examResults=[],resultsOwner=null,resultsRequest=null,examResult=null,examAnswer='',recording=null,recorded=null;
  const skillLabels={reading:'Lesen',listening:'Hören',writing:'Schreiben',speaking:'Sprechen'};
  const retention=48*3600000;
@@ -19,7 +19,7 @@
  async function request(operation,event,messages,examFields){
   if(user()?.uid!==owner)throw Error('Bitte erneut anmelden.');
   const seq=generation,body={operation,chat:true,requestId:crypto.randomUUID()};
-  if(['event','review','restart','next','exam_start','exam_audio','exam_answer','exam_cancel'].includes(operation))body.revision=view.revision;
+  if(['event','review','restart','next','exam_start','exam_audio','exam_answer','exam_cancel','exam_pronunciation'].includes(operation))body.revision=view.revision;
   if(event)body.event={...event,stepId:view.stepId};
   if(messages)body.messages=messages;
   if(examFields)Object.assign(body,examFields);
@@ -134,10 +134,48 @@
   if(!recorded||busy)return;
   const blob=recorded;
   if(blob.size>500000){message('Die Aufnahme ist zu groß. Bitte nimm eine kürzere Antwort auf.');return;}
-  const data=new Uint8Array(await blob.arrayBuffer());
+  const data=await blob.arrayBuffer();
+  return examRequest('exam_answer',{audio:audioBase64(data),format:blob.type.split(';')[0]});
+ }
+ function audioBase64(buffer){
+  const data=new Uint8Array(buffer);
   let binary='';
   for(let i=0;i<data.length;i+=8192)binary+=String.fromCharCode(...data.subarray(i,i+8192));
-  return examRequest('exam_answer',{audio:btoa(binary),format:blob.type.split(';')[0]});
+  return btoa(binary);
+ }
+ async function pronunciationWav(blob){
+  const decoder=new OfflineAudioContext(1,1,16000);
+  const decoded=await decoder.decodeAudioData(await blob.arrayBuffer());
+  const samples=decoded.getChannelData(0).subarray(0,192000);
+  const data=new ArrayBuffer(44+samples.length*2);
+  const wav=new DataView(data);
+  for(const [offset,label] of [[0,'RIFF'],[8,'WAVEfmt '],[36,'data']])
+   for(let i=0;i<label.length;i++)wav.setUint8(offset+i,label.charCodeAt(i));
+  for(const [offset,value] of [[4,data.byteLength-8],[16,16],[24,16000],[28,32000],[40,samples.length*2]])
+   wav.setUint32(offset,value,true);
+  for(const [offset,value] of [[20,1],[22,1],[32,2],[34,16]])wav.setUint16(offset,value,true);
+  samples.forEach((value,i)=>wav.setInt16(44+i*2,Math.max(-32768,Math.min(32767,value*32768)),true));
+  return audioBase64(data);
+ }
+ async function requestPronunciation(){
+  if(busy||!pronunciationClip||!examResult)return;
+  const result=examResult,clip=pronunciationClip;
+  setBusy(true);message('Chvilku prosím…');
+  try{
+   const audio=await pronunciationWav(clip);
+   if(!active()||examResult!==result||user()?.uid!==owner)return;
+   const response=await request('exam_pronunciation',null,null,{examId:result.id,audio});
+   view={...view,revision:response.revision};
+   pronunciationMessage=response.tip||'Z téhle nahrávky nedokážu dát spolehlivý tip k výslovnosti.';
+  }catch{
+   pronunciationMessage='Tip k výslovnosti teď není k dispozici.';
+  }finally{
+   if(examResult===result){
+    pronunciationClip=null;
+    render();
+   }
+   setBusy(false);
+  }
  }
  async function examRequest(operation,fields={}){
   if(busy||recording)return;
@@ -152,7 +190,11 @@
     audio=new Audio(audioURL);
     await audio.play().catch(()=>{pendingAudio=true;});
    }else{
-    if(current&&!result.exam&&operation==='exam_answer')examResult=result.examResults.find(item=>item.id===current.id);
+    if(current&&!result.exam&&operation==='exam_answer'){
+     examResult=result.examResults.find(item=>item.id===current.id);
+     pronunciationClip=current.skill==='speaking'&&typeof OfflineAudioContext!=='undefined'?recorded:null;
+     pronunciationMessage='';
+    }
     view=result;examAnswer='';recorded=null;
     storeExamResults(result.examResults,owner);
    }
@@ -165,7 +207,14 @@
   const exam=view.exam;
   if(!exam){
    box.append(node('h2',examResult.type),node('p',examResult.chapterName+' · '+examResult.score+' %'),resultDetails(examResult));
-   composer.append(button('Zurück zum Kurs',()=>{examResult=null;render();syncClock();}));
+   if(pronunciationMessage)box.append(node('p',pronunciationMessage));
+   if(pronunciationClip){
+    composer.append(node('p','Volitelné: krátkou část nahrávky vyhodnotí OpenAI. Výsledek zkoušky se tím nemění.'),
+     button('Tip k výslovnosti',requestPronunciation,true));
+   }
+   composer.append(button('Zurück zum Kurs',()=>{
+    examResult=null;pronunciationClip=null;pronunciationMessage='';render();syncClock();
+   }));
    return;
   }
   box.append(node('h2',skillLabels[exam.skill]+' · '+(exam.index+1)+'/'+exam.total));
@@ -563,14 +612,14 @@
  async function leave(target){
   if(translating){translating=false;render();return;}
   if(busy)return;stopSpeech();stopClock();
-  const inExam=!!view?.exam;pendingAudio=false;examResult=null;examAnswer='';
+  const inExam=!!view?.exam;pendingAudio=false;examResult=null;pronunciationClip=null;pronunciationMessage='';examAnswer='';
   if(!inExam&&view?.status==='active'&&user()?.uid===owner){setBusy(true);try{view=await request('event',{type:'pause'});}catch(_){/* Existing saved position remains resumable. */}finally{setBusy(false);}}
   history=[];translations=[];translationDraft='';translationBusy=false;
   generation++;clearRecording();controller?.abort();if(target==='study')window.goLearn();else window.showView('splash');
  }
  async function open(){
   if(busy)return;const current=await window.marcelaAuth.ensureUser();if(!current?.verified)return;
-  owner=current.uid;view=null;pendingAudio=false;examResult=null;examAnswer='';recorded=null;draft='';selected=[];menuOpen=false;
+  owner=current.uid;view=null;pendingAudio=false;examResult=null;pronunciationClip=null;pronunciationMessage='';examAnswer='';recorded=null;draft='';selected=[];menuOpen=false;
   translating=false;translationBusy=false;translations=[];translationDraft='';readHistory();generation++;stopSpeech();window.stopTimer?.();window.showView('teacher-view');render();await load();
  }
  function study(){if(active())return leave('study');window.stopTimer?.();window.goLearn();}
@@ -592,7 +641,7 @@
    if(active()){
     if(!chatTimer)chatTimer=setInterval(()=>{refreshHeader();if(pruneHistory()&&!translating)render();},1000);
    }else{
-    stopSpeech();stopClock();clearRecording();clearInterval(chatTimer);chatTimer=null;
+    stopSpeech();stopClock();clearRecording();pronunciationClip=null;pronunciationMessage='';clearInterval(chatTimer);chatTimer=null;
     box.replaceChildren();composer.replaceChildren();history=[];translations=[];draft='';translationDraft='';
    }
   }).observe(page,{attributes:true,attributeFilter:['class']});

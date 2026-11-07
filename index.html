@@ -681,7 +681,7 @@ textarea.fc{resize:vertical;min-height:68px}
       <div id="horoscope-card" style="grid-column:2;background:light-dark(rgba(255,255,255,.88),#292c2d);border-radius:14px;padding:10px 10px;border:1px solid light-dark(rgba(255,255,255,.65),#505253);box-shadow:0 2px 8px rgba(24,35,46,.05),0 8px 24px rgba(24,35,46,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:default">
         <div id="last-exam-card" style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3)">Letzte Prüfung</div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3)">Letzte Prüfungen</div>
           <div id="last-exam-main" style="font-size:15px;font-weight:900;color:var(--ink);line-height:1.1">Noch keine</div>
           <div id="last-exam-sub" style="font-size:9.5px;font-weight:600;color:var(--ink3);line-height:1.35">Noch keine Prüfungs-Simulation</div>
         </div>
@@ -3715,7 +3715,7 @@ function ensureLastGlobalExamContainer() {
   card.style.cursor = 'default';
   card.innerHTML = '<div id="last-exam-card" style="width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px">'
     + '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'
-    + '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3)">Letzte Prüfung</div>'
+    + '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3)">Letzte Prüfungen</div>'
     + '<div id="last-exam-main" style="font-size:15px;font-weight:900;color:var(--ink);line-height:1.1">Noch keine</div>'
     + '<div id="last-exam-sub" style="font-size:9.5px;font-weight:600;color:var(--ink3);line-height:1.35">Prüfungs-Simulation starten</div>'
     + '</div>';
@@ -6188,7 +6188,25 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
   window.startLessonCheck=function(){ normalizeApp(); const ch=getCurrentChapter(); if(!ch)return; startCheck(lessonCheckItems(ch),false); };
   window.startGlobalLessonCheck=function(){ normalizeApp(); startCheck(window.lessonCheckItemsForAllChapters(),true); };
   const oldShowLessonCheckResult=window.showLessonCheckResult; window.showLessonCheckResult=function(){ const global=!!(typeof _globalLessonCheckActive!=='undefined'&&_globalLessonCheckActive), ch=getCurrentChapter(), started=Number(_lessonCheckStartMs)||Date.now(); const record={id:'exam_'+Date.now(),examKind:global?'global':'lesson',type:global?'Prüfungssimulation':'Lektionsüberprüfung',chapterId:global?'all':(ch&&ch.id),chapterName:global?'Alle Kapitel':(ch&&ch.name||'Kapitel'),lessonName:global?'Alle Lektionen':(window.__lastLessonCheckLesson||'Alle Lektionen'),durationMs:Date.now()-started,duration:fmtDuration(Date.now()-started),ts:Date.now(),score:Number(_lessonCheckScore)||0,total:Number(_lessonCheckTotal)||0}; saveLastExam(record); return oldShowLessonCheckResult?oldShowLessonCheckResult.apply(this,arguments):undefined; };
-  function renderLastExamFinal(){ const d=db(),r=d.examRecords&&(d.examRecords.lastExam||d.examRecords.globalExam||d.examRecords.lastGlobalExam),main=byId('last-exam-main'),sub=byId('last-exam-sub'); if(!main||!sub)return; if(!r){main.textContent='Noch keine';sub.textContent='Noch keine Prüfung';return;} main.textContent=(r.type||r.examKind||'Prüfung')+' · '+(r.score!=null?(r.score+'/'+(r.total||'?')):''); const dt=r.ts?new Date(r.ts).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''; sub.textContent=(r.chapterName||'Kapitel')+' · '+(r.lessonName||'Standard')+' · '+(r.duration||fmtDuration(r.durationMs))+(dt?' · '+dt:''); }
+  function renderLastExamFinal(){
+    const exams=db().examRecords||{},study=[exams.lastExam,exams.globalExam||exams.lastGlobalExam,...Object.values(exams.lessonChecks||{})];
+    const teacher=window.marcelaTeacher,records=teacher?.resultsForHome(study)||study.filter(Boolean);
+    const r=records[0],main=byId('last-exam-main'),sub=byId('last-exam-sub'),card=byId('horoscope-card');
+    if(!main||!sub)return;
+    if(card&&teacher&&r){
+      card.setAttribute('role','button');card.setAttribute('aria-label','Letzte Prüfungen anzeigen');
+      card.tabIndex=0;card.style.cursor='pointer';
+      card.onclick=()=>teacher.openResults(study);
+      card.onkeydown=event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();teacher.openResults(study);}};
+    }else if(card){
+      card.removeAttribute('role');card.removeAttribute('aria-label');card.removeAttribute('tabindex');
+      card.style.cursor='default';card.onclick=null;card.onkeydown=null;
+    }
+    if(!r){main.textContent='Noch keine';sub.textContent='Noch keine Prüfung';return;}
+    main.textContent=(r.type||r.examKind||'Prüfung')+' · '+(r.modules?r.score+' %':r.score+'/'+(r.total||'?'));
+    const dt=r.ts?new Date(r.ts).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    sub.textContent=[r.chapterName||'Kapitel',r.lessonName,r.duration||fmtDuration(r.durationMs),dt].filter(Boolean).join(' · ');
+  }
   window.renderLastGlobalExamOnSplash=renderLastExamFinal;
   const oldStartModeSelect=window.startModeSelect; window.startModeSelect=function(){ normalizeApp(); const r=oldStartModeSelect?oldStartModeSelect.apply(this,arguments):undefined; const ch=getCurrentChapter(); if(ch){ const map={flashcard:itemsForMode(ch,'flashcard').length,mc:itemsForMode(ch,'mc').length,sentences:itemsForMode(ch,'sentences').length,order:itemsForMode(ch,'order').length,sentorder:itemsForMode(ch,'sentorder').length,fill:itemsForMode(ch,'fill').length,typing:itemsForMode(ch,'typing').length,qa:itemsForMode(ch,'qa').length,grammar:itemsForMode(ch,'grammar').length,clock:1}; Object.keys(map).forEach(m=>{const el=byId('mode-'+m); if(el){el.classList.toggle('disabled',!map[m]); el.onclick=function(e){if(e){e.preventDefault();e.stopPropagation();} if(el.classList.contains('disabled'))return; window.openLessonSelect(m);};}}); const lc=byId('mode-lessoncheck'); if(lc){lc.classList.toggle('disabled',!lessonCheckItems(ch).length); lc.onclick=e=>{if(e){e.preventDefault();e.stopPropagation();} if(!lc.classList.contains('disabled'))window.startLessonCheck();};}} show('mode-select'); return r; };
   document.addEventListener('click',function(e){ const row=e.target&&e.target.closest?e.target.closest('[data-senior-final-start="1"]'):null; if(row){ e.preventDefault(); e.stopPropagation(); const lesson=row.getAttribute('data-lesson')||''; window.__lastLessonCheckLesson=lesson||'Alle Lektionen'; window.startPractice(row.getAttribute('data-mode'),lesson); }},true);
@@ -6595,7 +6613,7 @@ Keine Datenstrukturänderung; nur Integrationspfade werden überschrieben.
 <script src="account-ui.js?v=20261105-chapter-additions1"></script>
 <script src="chapter-groups.js?v=20261030-2"></script>
 <script src="study-evidence.js?v=20261105-1"></script>
-<link rel="stylesheet" href="teacher-ui.css?v=20261106-theme1">
-<script src="teacher-ui.js?v=20261107-foxly14"></script>
+<link rel="stylesheet" href="teacher-ui.css?v=20261107-exams1">
+<script src="teacher-ui.js?v=20261107-exams1"></script>
 </body>
 </html>

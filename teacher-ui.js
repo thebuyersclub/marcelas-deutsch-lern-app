@@ -1,24 +1,28 @@
 /* Persönlicher Unterricht: Antworten werden ausschließlich am Server bewertet. */
 (function(){'use strict';
  let view=null,owner=null,busy=false,generation=0,controller=null,audio=null,audioURL=null,speechGeneration=0,speechEnd=null,tick=null,lastTick=0,checkingState=false;
+ let pendingAudio=false;
+ let examResults=[],resultsOwner=null,resultsRequest=null,examResult=null,examAnswer='',recording=null,recorded=null;
+ const skillLabels={reading:'Lesen',listening:'Hören',writing:'Schreiben',speaking:'Sprechen'};
  const retention=48*3600000;
  let history=[],translations=[],translating=false,translationBusy=false,translationDraft='',draft='',selected=[],menuOpen=false,chatTimer=null;
  const user=()=>window.marcelaAuth.user(),active=()=>document.getElementById('teacher-view')?.classList.contains('active');
  const node=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;};
  function button(label,action,secondary=false){const el=node('button',label,secondary?'teacher-button secondary':'teacher-button');el.type='button';el.disabled=busy;el.onclick=action;return el;}
  function stopSpeech(){speechGeneration++;if(speechEnd){speechEnd();speechEnd=null;}if(audio){audio.pause();audio=null;}if(audioURL){URL.revokeObjectURL(audioURL);audioURL=null;}}
- function clock(){const at=Date.now();if(lastTick&&user()?.uid===owner&&active()&&!document.hidden&&view?.status==='active'){const delta=Math.min(5,Math.floor((at-lastTick)/1000));if(delta>0)window.addSecs?.(delta);}lastTick=at;}
+ function clock(){const at=Date.now();if(lastTick&&user()?.uid===owner&&active()&&!document.hidden&&view?.status==='active'&&!view.exam&&!examResult){const delta=Math.min(5,Math.floor((at-lastTick)/1000));if(delta>0)window.addSecs?.(delta);}lastTick=at;}
  function stopClock(){if(tick){clock();clearInterval(tick);tick=null;}lastTick=0;}
- function syncClock(){if(active()&&!document.hidden&&view?.status==='active'){if(!tick){lastTick=Date.now();tick=setInterval(clock,4000);}}else stopClock();}
+ function syncClock(){if(active()&&!document.hidden&&view?.status==='active'&&!view.exam&&!examResult){if(!tick){lastTick=Date.now();tick=setInterval(clock,4000);}}else stopClock();}
  function content(){return document.getElementById('teacher-content');}
  function message(text){const el=document.getElementById('teacher-status');if(el)el.textContent=text;}
  function setBusy(value){busy=value;document.querySelectorAll('#teacher-view button').forEach(el=>el.disabled=value);content()?.setAttribute('aria-busy',String(value));}
- async function request(operation,event,messages){
+ async function request(operation,event,messages,examFields){
   if(user()?.uid!==owner)throw Error('Bitte erneut anmelden.');
   const seq=generation,body={operation,chat:true,requestId:crypto.randomUUID()};
-  if(['event','review','restart','next'].includes(operation))body.revision=view.revision;
+  if(['event','review','restart','next','exam_start','exam_audio','exam_answer','exam_cancel'].includes(operation))body.revision=view.revision;
   if(event)body.event={...event,stepId:view.stepId};
   if(messages)body.messages=messages;
+  if(examFields)Object.assign(body,examFields);
   const requestController=new AbortController();
   if(operation!=='state')controller=requestController;
   const timeout=setTimeout(()=>requestController.abort(),operation==='state'?10000:55000);
@@ -42,24 +46,198 @@
   catch(error){if(active()){message(error.name==='AbortError'?'Die Verbindung hat zu lange gedauert. Bitte den gespeicherten Stand neu laden.':error.message);const retry=button('Gespeicherten Stand laden',()=>load());retry.disabled=false;document.getElementById('teacher-retry').replaceChildren(retry);}}
   finally{setBusy(false);syncClock();}
  }
+ function storeExamResults(result,uid){
+  if(!Array.isArray(result)||user()?.uid!==uid)return;
+  resultsOwner=uid;
+  examResults=result;
+  window.renderLastGlobalExamOnSplash?.();
+ }
+ function resultsForHome(studyRecords=[]){
+  const records=[...(resultsOwner&&resultsOwner===user()?.uid?examResults:[]),...studyRecords].filter(Boolean);
+  return [...new Map(records.map(result=>[result.id||JSON.stringify(result),result])).values()]
+   .sort((a,b)=>(b.ts||0)-(a.ts||0));
+ }
+ async function refreshExamResults(){
+  const uid=user()?.uid;
+  if(!uid||!user()?.verified||resultsRequest===uid)return;
+  resultsRequest=uid;
+  try{
+   const response=await fetch(window.MARCELA_CONFIG.teacherEndpoint,{method:'POST',
+    headers:{...await window.marcelaAuth.headers(),'Content-Type':'application/json'},
+    body:JSON.stringify({operation:'exam_results'}),signal:AbortSignal.timeout(10000),cache:'no-store'});
+   if(response.ok)storeExamResults((await response.json()).results,uid);
+  }catch{}finally{if(resultsRequest===uid)resultsRequest=null;}
+ }
+ function resultDetails(result){
+  const list=node('ul');
+  for(const [skill,score] of Object.entries(result.modules||{}))list.append(node('li',skillLabels[skill]+' '+score+' %'));
+  return list;
+ }
+ function openResults(studyRecords){
+  const dialog=node('dialog',undefined,'foxly-exam-history');
+  dialog.append(node('h2','Letzte Prüfungen'));
+  for(const result of resultsForHome(studyRecords)){
+   const item=node('section');
+   item.append(node('h3',(result.type||'Prüfung')+' · '+result.score+'/'+result.total),
+    node('p',result.chapterName+(result.ts?' · '+new Date(result.ts).toLocaleString('de-AT'):'') ));
+   if(result.modules)item.append(resultDetails(result));
+   dialog.append(item);
+  }
+  const close=button('Schließen',()=>dialog.close(),true);dialog.append(close);
+  dialog.onclose=()=>dialog.remove();
+  document.body.append(dialog);dialog.showModal();
+ }
+ function clearRecording(){
+  if(recording)recording.stop();
+  recorded=null;
+ }
+ async function recordExamTurn(exam){
+  if(recording||busy)return;
+  if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
+   message('Für den Sprechteil brauchst du einen Browser mit Mikrofonaufnahme.');return;
+  }
+  let stream;
+  setBusy(true);
+  try{
+   stream=await navigator.mediaDevices.getUserMedia({audio:true});
+   if(!active()||view.exam!==exam||user()?.uid!==owner){stream.getTracks().forEach(track=>track.stop());return;}
+   const recorder=new MediaRecorder(stream,{audioBitsPerSecond:48000});
+   const chunks=[];
+   recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
+   recorder.onstop=()=>{
+    stream.getTracks().forEach(track=>track.stop());
+    if(recording?.recorder===recorder)recording=null;
+    if(!active()||view.exam!==exam||user()?.uid!==owner)return;
+    recorded=new Blob(chunks,{type:recorder.mimeType||chunks[0]?.type});
+    render();
+   };
+   recorder.onerror=()=>{
+    stop();message('Die Aufnahme konnte nicht erstellt werden.');
+   };
+   const stop=()=>{
+    clearTimeout(timer);
+    if(recorder.state!=='inactive')recorder.stop();
+    stream.getTracks().forEach(track=>track.stop());
+   };
+   const timer=setTimeout(stop,20000);
+   recording={recorder,stop};
+   try{recorder.start();}catch(error){stop();recording=null;throw error;}
+  }catch{
+   stream?.getTracks().forEach(track=>track.stop());
+   message('Mikrofon nicht verfügbar. Prüfe die Freigabe im Browser.');
+  }finally{
+   setBusy(false);
+   if(recording)render();
+  }
+ }
+ async function submitRecording(){
+  if(!recorded||busy)return;
+  const blob=recorded;
+  if(blob.size>500000){message('Die Aufnahme ist zu groß. Bitte nimm eine kürzere Antwort auf.');return;}
+  const data=new Uint8Array(await blob.arrayBuffer());
+  let binary='';
+  for(let i=0;i<data.length;i+=8192)binary+=String.fromCharCode(...data.subarray(i,i+8192));
+  return examRequest('exam_answer',{audio:btoa(binary),format:blob.type.split(';')[0]});
+ }
+ async function examRequest(operation,fields={}){
+  if(busy||recording)return;
+  const current=view.exam;
+  if(current)Object.assign(fields,{examIndex:current.index,examTurn:current.turn});
+  pendingAudio=false;stopSpeech();setBusy(true);message('Einen Moment …');
+  try{
+   const result=await request(operation,null,null,fields);
+   if(operation==='exam_audio'){
+    view={...view,revision:result.revision,exam:result.exam};
+    audioURL=URL.createObjectURL(new Blob([Uint8Array.from(atob(result.audio),char=>char.charCodeAt(0))],{type:'audio/mpeg'}));
+    audio=new Audio(audioURL);
+    await audio.play().catch(()=>{pendingAudio=true;});
+   }else{
+    if(current&&!result.exam&&operation==='exam_answer')examResult=result.examResults.find(item=>item.id===current.id);
+    view=result;examAnswer='';recorded=null;
+    storeExamResults(result.examResults,owner);
+   }
+   render();syncClock();
+  }catch(error){message(error.name==='AbortError'?'Die Anfrage hat zu lange gedauert. Bitte lade den gespeicherten Stand.':error.message);
+   if(operation!=='exam_start')document.getElementById('teacher-retry').replaceChildren(button('Stand neu laden',load,true));
+  }finally{setBusy(false);}
+ }
+ function renderExam(box,composer){
+  const exam=view.exam;
+  if(!exam){
+   box.append(node('h2',examResult.type),node('p',examResult.chapterName+' · '+examResult.score+' %'),resultDetails(examResult));
+   composer.append(button('Zurück zum Kurs',()=>{examResult=null;render();syncClock();}));
+   return;
+  }
+  box.append(node('h2',skillLabels[exam.skill]+' · '+(exam.index+1)+'/'+exam.total));
+  if(exam.text)box.append(node('p',exam.text,'foxly-exam-text'));
+  if(exam.turnCount)box.append(node('p','Gesprächszug '+(exam.turn+1)+' von '+exam.turnCount));
+  box.append(node('p',exam.prompt,'foxly-exam-text'));
+  if(exam.skill==='listening'){
+   if(pendingAudio)box.append(button('Geladenen Hörtext anhören',async()=>{
+    try{await audio.play();pendingAudio=false;render();}
+    catch{message('Der Hörtext konnte nicht abgespielt werden.');}
+   },true));
+   else if(exam.playsLeft)box.append(button('Hörtext abspielen ('+exam.playsLeft+')',()=>examRequest('exam_audio'),true));
+   else box.append(node('p','Beide Wiedergaben wurden genutzt.'));
+  }
+  const form=node('form',undefined,'foxly-exam-form');composer.append(form);
+  const submit=node('button','Antwort abgeben','teacher-button');submit.type='submit';submit.disabled=busy;
+  if(exam.options.length){
+   for(const [i,option] of exam.options.entries()){
+    const label=node('label'),input=node('input');input.type='radio';input.name='exam-option';input.value=i;input.required=true;
+    label.append(input,node('span',option));form.append(label);
+   }
+   form.append(submit);
+   form.onsubmit=event=>{event.preventDefault();const option=form.querySelector('input:checked');
+    if(option&&(exam.skill!=='listening'||!pendingAudio&&exam.playsLeft<2))return examRequest('exam_answer',{option:Number(option.value)});
+    message('Höre zuerst den Hörtext an.');
+   };
+  }else if(exam.skill==='writing'){
+   const field=node('textarea');field.required=true;field.maxLength=1000;field.value=examAnswer;
+   field.setAttribute('aria-label','Antwort auf Deutsch');field.oninput=()=>{examAnswer=field.value;};
+   form.append(field,submit);form.onsubmit=event=>{event.preventDefault();return examRequest('exam_answer',{answer:field.value.trim()});};
+  }else{
+   form.append(node('p','Sprich bis zu 20 Sekunden. Für die Bewertung wird die Aufnahme an OpenAI übertragen.'));
+   if(recording)form.append(button('Aufnahme stoppen',()=>recording?.stop()));
+   else{
+    form.append(button(recorded?'Neu aufnehmen':'Aufnahme starten',()=>recordExamTurn(exam)));
+    if(recorded){form.append(submit);form.onsubmit=event=>{event.preventDefault();return submitRecording();};}
+   }
+  }
+  if(!recording)composer.append(button('Prüfung abbrechen',()=>{
+   if(window.confirm('Prüfung abbrechen? Dieser Versuch wird nicht gewertet.'))return examRequest('exam_cancel');
+  },true));
+ }
+ function addExamOptions(actions){
+  const options=view.examOptions;
+  if(!options?.chapter&&!options?.total)return;
+  const panel=node('details',undefined,'foxly-exam-options');
+  if(view.feedback?.de.includes('100 % der Lernziele'))panel.open=true;
+  panel.append(node('summary','Prüfung starten'),
+   node('p','Mit Lesen, Hören, Schreiben und Sprechen. Halte dein Mikrofon bereit.'));
+  if(options.chapter)panel.append(button('Kapitelprüfung · '+options.chapter.title,()=>examRequest('exam_start',{examKind:'chapter'})));
+  if(options.total)panel.append(button('Gesamtprüfung · bisherige Kapitel',()=>examRequest('exam_start',{examKind:'total'}),true));
+  actions.append(panel);
+ }
  async function load(){
   if(busy)return;setBusy(true);message('Unterricht wird geladen …');
   try{
    view=await request('start');
+   storeExamResults(view.examResults,owner);
    const imported=await importLocalHistory();
    rememberChapterFarewell(view);render();
    if(!imported)message('Historii se zatím nepodařilo synchronizovat.');
   }catch(error){message(error.message);const retry=button('Erneut versuchen',load);retry.disabled=false;document.getElementById('teacher-retry').replaceChildren(retry);}finally{setBusy(false);syncClock();}
  }
  async function refreshCourse(){
-  if(!active()||document.hidden||!view||busy||checkingState||translating||draft||selected.length)return;
+  if(!active()||document.hidden||!view||busy||checkingState||translating||recording||examAnswer||recorded||draft||selected.length)return;
   checkingState=true;
   const current=view;
   try{
    const latest=await request('state');
    if(!active()||document.hidden||busy||translating||draft||selected.length||view!==current||
       latest.empty||latest.revision<=current.revision)return;
-   view=latest;mergeRemoteHistory(latest);
+   view=latest;mergeRemoteHistory(latest);storeExamResults(latest.examResults,owner);
    rememberChapterFarewell(latest);render();syncClock();
   }catch{
    // Keep the current screen on temporary connection failures.
@@ -312,14 +490,14 @@
  }
  function refreshHeader(){
   document.getElementById('foxly-clock').textContent=localTime(Date.now());
-  document.getElementById('foxly-score').textContent=translating?'':view?.score==null?'— %':view.score+' %';
-  document.getElementById('foxly-title').textContent=translating?'Übersetzer / Překlad':'Foxly – Spaß beim Lernen';
+  document.getElementById('foxly-score').textContent=translating||view?.exam||examResult?'':view?.score==null?'— %':view.score+' %';
+  document.getElementById('foxly-title').textContent=view?.exam||examResult?'Foxly · Prüfung':translating?'Übersetzer / Překlad':'Foxly – Spaß beim Lernen';
  }
  function render(){
   const box=content(),composer=document.getElementById('foxly-composer');
   const focused=document.activeElement;
   const textTask=view?.status==='active'&&view.kind!=='choice'&&!view.exercise?.items?.length;
-  const composerMode=translating?'translation':view?.kind||'';
+  const composerMode=view?.exam||examResult?'exam':translating?'translation':view?.kind||'';
   const keepInput=focused?.className==='foxly-text-input'&&composer.contains(focused)&&
    composer.dataset.mode===composerMode&&(translating||textTask);
   box.replaceChildren();
@@ -329,6 +507,9 @@
   }
   document.getElementById('teacher-retry').replaceChildren();message('');
   refreshHeader();
+  if(view?.exam||examResult){
+   renderExam(box,composer);return;
+  }
   if(translating){
    box.append(...translations.map(bubble));
    if(keepInput)focused.value=translationDraft;
@@ -351,6 +532,7 @@
     return;
    }
    const actions=node('div',undefined,'foxly-compose-main');composer.append(actions);
+   addExamOptions(actions);
    if(view.status==='paused'){
     actions.append(button('Fortsetzen',()=>send('event',{type:'resume'})));
    }else if(view.status==='complete'){
@@ -381,13 +563,14 @@
  async function leave(target){
   if(translating){translating=false;render();return;}
   if(busy)return;stopSpeech();stopClock();
-  if(view?.status==='active'&&user()?.uid===owner){setBusy(true);try{view=await request('event',{type:'pause'});}catch(_){/* Existing saved position remains resumable. */}finally{setBusy(false);}}
+  const inExam=!!view?.exam;pendingAudio=false;examResult=null;examAnswer='';
+  if(!inExam&&view?.status==='active'&&user()?.uid===owner){setBusy(true);try{view=await request('event',{type:'pause'});}catch(_){/* Existing saved position remains resumable. */}finally{setBusy(false);}}
   history=[];translations=[];translationDraft='';translationBusy=false;
-  generation++;controller?.abort();if(target==='study')window.goLearn();else window.showView('splash');
+  generation++;clearRecording();controller?.abort();if(target==='study')window.goLearn();else window.showView('splash');
  }
  async function open(){
   if(busy)return;const current=await window.marcelaAuth.ensureUser();if(!current?.verified)return;
-  owner=current.uid;view=null;draft='';selected=[];menuOpen=false;
+  owner=current.uid;view=null;pendingAudio=false;examResult=null;examAnswer='';recorded=null;draft='';selected=[];menuOpen=false;
   translating=false;translationBusy=false;translations=[];translationDraft='';readHistory();generation++;stopSpeech();window.stopTimer?.();window.showView('teacher-view');render();await load();
  }
  function study(){if(active())return leave('study');window.stopTimer?.();window.goLearn();}
@@ -409,7 +592,7 @@
    if(active()){
     if(!chatTimer)chatTimer=setInterval(()=>{refreshHeader();if(pruneHistory()&&!translating)render();},1000);
    }else{
-    stopSpeech();stopClock();clearInterval(chatTimer);chatTimer=null;
+    stopSpeech();stopClock();clearRecording();clearInterval(chatTimer);chatTimer=null;
     box.replaceChildren();composer.replaceChildren();history=[];translations=[];draft='';translationDraft='';
    }
   }).observe(page,{attributes:true,attributeFilter:['class']});
@@ -426,11 +609,17 @@
   resize();
   document.addEventListener('visibilitychange',()=>{
    if(document.hidden){stopSpeech();stopClock();}
+   if(!document.hidden&&document.getElementById('splash')?.classList.contains('active'))void refreshExamResults();
    else{if(active()&&pruneHistory()&&!translating)render();syncClock();void refreshCourse();}
   });
   setInterval(refreshCourse,15000);
+  const splash=document.getElementById('splash');
+  if(splash)new MutationObserver(()=>{
+   if(splash.classList.contains('active'))void refreshExamResults();
+  }).observe(splash,{attributes:true,attributeFilter:['class']});
+  if(document.getElementById('last-exam-card')&&splash?.classList.contains('active'))void refreshExamResults();
   const card=document.getElementById('study-card');if(card){card.setAttribute('role','button');card.tabIndex=0;card.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();study();}};}
  }
- window.marcelaTeacher=Object.freeze({open,study});window._sqLearn=open;
+ window.marcelaTeacher=Object.freeze({open,study,resultsForHome,openResults});window._sqLearn=open;
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
